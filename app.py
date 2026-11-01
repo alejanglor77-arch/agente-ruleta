@@ -1,8 +1,10 @@
 import streamlit as st
+import json
+import os
 
-st.set_page_config(page_title="Agente Ruleta Express", layout="centered")
+st.set_page_config(page_title="Agente Ruleta Express Pro", layout="centered")
 
-# Estilos CSS optimizados y estables para iPhone 12
+# Estilos CSS optimizados para iPhone 12
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -116,7 +118,30 @@ RUEDA_OFICIAL = [
     5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26
 ]
 
-# 2. MEMORIA DE SESIÓN
+# 2. SISTEMA DE MEMORIA ACUMULATIVA (APRENDIZAJE GRATIS EN ARCHIVO LOCAL)
+ARCH_MEMORIA = "historial_aprendido.json"
+
+def cargar_memoria_historica():
+    if os.path.exists(ARCH_MEMORIA):
+        try:
+            with open(ARCH_MEMORIA, "r") as f:
+                return json.load(f)
+        except:
+            return []
+    return []
+
+def guardar_en_memoria(sesion_historial):
+    if not sesion_historial:
+        return
+    historico = cargar_memoria_historica()
+    historico.append(sesion_historial)
+    # Guardamos las últimas 50 sesiones para que el cerebro crezca sin sobrecargar
+    if len(historico) > 50:
+        historico = historico[-50:]
+    with open(ARCH_MEMORIA, "w") as f:
+        json.dump(historico, f)
+
+# 3. MEMORIA DE SESIÓN ACTUAL
 if "historial" not in st.session_state:
     st.session_state.historial = []
 if "calientes" not in st.session_state:
@@ -144,8 +169,8 @@ def borrar_ultimo():
     elif st.session_state.foco == "reg" and st.session_state.historial:
         st.session_state.historial.pop(0)
 
-# 3. NUEVO CEREBRO DEL AGENTE (ADAPTATIVO, CON DETECCIÓN DE ECOS Y BLOQUES CONTINUOS)
-def obtener_vecinos(num, radio=2):
+# 4. CEREBRO ADAPTATIVO CON APRENDIZAJE HISTÓRICO
+def obtener_vecinos(num, radio=3): # Radio ampliado para mayor solidez física
     idx = RUEDA_OFICIAL.index(num)
     return [RUEDA_OFICIAL[(idx + i) % len(RUEDA_OFICIAL)] for i in range(-radio, radio + 1)]
 
@@ -153,62 +178,62 @@ def calcular_agente(historial, calientes_panel, frios_panel):
     if len(historial) < 2 and not calientes_panel:
         return None, None
 
-    # Ventana de análisis reciente (hasta 30 giros)
+    # Cargamos el aprendizaje histórico de sesiones pasadas
+    memoria_pasada = cargar_memoria_historica()
+    conteo_historico_global = {n: 0 for n in range(37)}
+    for sesion in memoria_pasada:
+        for num in sesion:
+            conteo_historico_global[num] += 1
+
+    # Ventana de sesión actual
     ventana = historial[:30] if historial else []
     conteo_sesion = {n: ventana.count(n) for n in range(37)}
     
-    # Detección de Ecos / Repeticiones (números repetidos en la ventana corta)
     ecos_detectados = [n for n, count in conteo_sesion.items() if count >= 2]
 
     puntuaciones = {}
     for num in RUEDA_OFICIAL:
         vecinos_cercanos = obtener_vecinos(num, radio=1)
         
-        # Base de frecuencia en sesión
+        # Ponderación basada en frecuencia actual + peso acumulado de sesiones pasadas (Aprendizaje)
         score = sum(conteo_sesion[v] * 2 for v in vecinos_cercanos)
+        score += sum(conteo_historico_global[v] * 0.1 for v in vecinos_cercanos) # Feedback neuronal histórico
         
-        # Impulso por números calientes del usuario
         score += sum(3 for v in vecinos_cercanos if v in calientes_panel)
         
-        # ALERTA DE ECO: Si la zona contiene un número repetido recientemente, se premia con fuerza
         if any(v in ecos_detectados for v in vecinos_cercanos):
-            score += 5
+            score += 6 # Alerta de eco reforzada
 
-        # ADAPTABILIDAD DINÁMICA DE FRÍOS: Si un "frío" empieza a salir en la ventana, 
-        # el agente reduce automáticamente su penalización para no bloquearse ante el cambio de ciclo.
+        # Adaptabilidad de fríos
         for v in vecinos_cercanos:
             if v in frios_panel:
-                # Si el frío tiene frecuencia reciente, la penalización se anula (flexibilidad de ciclo)
                 if conteo_sesion[v] > 0:
-                    score -= 1  # Penalización suave de adaptación
+                    score -= 1 # Ciclo cambiado, flexibilizamos
                 else:
-                    score -= 4  # Penalización normal si sigue inactivo
+                    score -= 4
 
         puntuaciones[num] = score
 
-    # Ordenar candidatos para Grupo A (Ataque principal)
     ordenados = sorted(puntuaciones, key=puntuaciones.get, reverse=True)
     max_score = puntuaciones[ordenados[0]]
     
     apuesta_fuerte = []
     for n in ordenados:
-        # Permitir flexibilidad si el frío está empujando con eco
         if n in frios_panel and conteo_sesion[n] == 0:
             continue
-        if len(apuesta_fuerte) < 4 or (len(apuesta_fuerte) < 7 and puntuaciones[n] >= max_score * 0.65):
+        if len(apuesta_fuerte) < 5 or (len(apuesta_fuerte) < 8 and puntuaciones[n] >= max_score * 0.6):
             apuesta_fuerte.append(n)
 
-    # SELLADO DE HUECOS: Ordenar los números del Grupo A según su posición física en la rueda 
-    # para unificar el sector en un bloque continuo (cero espacios vacíos)
+    # Bloque continuo ordenado en la rueda (Cero huecos)
     apuesta_fuerte_ordenada_rueda = [n for n in RUEDA_OFICIAL if n in apuesta_fuerte]
 
-    # Generación de Grupo B adaptativo (Cobertura e inercia de rebote sin dejar huecos)
+    # COBERTURA SÓLIDA GRUPO B (Radio de 3 posiciones para que no sean solo 2 números)
     ultimo_num = historial[0] if historial else (calientes_panel[0] if calientes_panel else 0)
-    cobertura_inercia = [n for n in obtener_vecinos(ultimo_num, radio=2) if n not in apuesta_fuerte]
+    cobertura_inercia = [n for n in obtener_vecinos(ultimo_num, radio=3) if n not in apuesta_fuerte]
 
     return apuesta_fuerte_ordenada_rueda, sorted(cobertura_inercia)
 
-# --- FLUJO VERTICAL: CALIENTES -> FRÍOS -> REGISTRO ---
+# --- INTERFAZ VERTICAL ---
 
 # 1. BLOQUE CALIENTES
 if st.button("🔥 Calientes [✓]" if st.session_state.foco == "cal" else "🔥 Calientes", key="btn_foco_cal", use_container_width=True):
@@ -219,7 +244,7 @@ clase_cal = "caja-interactiva caja-activa" if st.session_state.foco == "cal" els
 txt_cal = ", ".join(map(str, st.session_state.calientes)) if st.session_state.calientes else "Vacío"
 st.markdown(f'<div class="{clase_cal}"><div class="caja-label">Calientes</div><b>{txt_cal}</b></div>', unsafe_allow_html=True)
 
-# 2. BLOQUE FRÍOS (JUSTO DEBAJO DE CALIENTES)
+# 2. BLOQUE FRÍOS
 if st.button("❄️ Fríos [✓]" if st.session_state.foco == "fri" else "❄️ Fríos", key="btn_foco_fri", use_container_width=True):
     st.session_state.foco = "fri"
     st.rerun()
@@ -228,12 +253,12 @@ clase_fri = "caja-interactiva caja-activa" if st.session_state.foco == "fri" els
 txt_fri = ", ".join(map(str, st.session_state.frios)) if st.session_state.frios else "Vacío"
 st.markdown(f'<div class="{clase_fri}"><div class="caja-label">Fríos</div><b>{txt_fri}</b></div>', unsafe_allow_html=True)
 
-# 3. BLOQUE REGISTRO (JUSTO DEBAJO DE FRÍOS)
+# 3. BLOQUE REGISTRO Y BOTÓN DE GUARDAR SESIÓN (APRENDIZAJE)
 if st.button("🎲 Registro [✓]" if st.session_state.foco == "reg" else "🎲 Registro", key="btn_foco_reg", use_container_width=True):
     st.session_state.foco = "reg"
     st.rerun()
 
-col_reg_v, col_del_v = st.columns([0.75, 0.25])
+col_reg_v, col_del_v = st.columns([0.6, 0.4])
 clase_reg = "registro-container caja-activa" if st.session_state.foco == "reg" else "registro-container"
 
 with col_reg_v:
@@ -244,17 +269,25 @@ with col_reg_v:
         st.markdown(f'<div class="{clase_reg}" style="color: #999999;"><div class="registro-texto">Reg (0): Sin registros</div></div>', unsafe_allow_html=True)
 
 with col_del_v:
-    if st.button("⌫ Borrar", key="btn_del_main"):
-        borrar_ultimo()
-        st.rerun()
+    col_sub_del1, col_sub_del2 = st.columns(2)
+    with col_sub_del1:
+        if st.button("⌫", key="btn_del_main", help="Borrar último"):
+            borrar_ultimo()
+            st.rerun()
+    with col_sub_del2:
+        if st.button("💾", key="btn_save_session", help="Guardar sesión para que la IA aprenda"):
+            if st.session_state.historial:
+                guardar_en_memoria(st.session_state.historial)
+                st.success("¡Aprendido!")
+                st.rerun()
 
 # --- GRUPOS A Y B ---
 fuerte, cobertura = calcular_agente(st.session_state.historial, st.session_state.calientes, st.session_state.frios)
 txt_a = ", ".join(map(str, fuerte)) if fuerte else "—"
 txt_b = ", ".join(map(str, cobertura)) if cobertura else "—"
 
-st.markdown(f'<div class="card-discreta"><div class="card-titulo">Grupo A (Ataque Continuo)</div><div class="card-valores-fuerte">{txt_a}</div></div>', unsafe_allow_html=True)
-st.markdown(f'<div class="card-discreta"><div class="card-titulo">Grupo B (Cobertura de Rebote)</div><div class="card-valores-suave">{txt_b}</div></div>', unsafe_allow_html=True)
+st.markdown(f'<div class="card-discreta"><div class="card-titulo">Grupo A (Ataque Continuo IA)</div><div class="card-valores-fuerte">{txt_a}</div></div>', unsafe_allow_html=True)
+st.markdown(f'<div class="card-discreta"><div class="card-titulo">Grupo B (Cobertura Sólida Rebote)</div><div class="card-valores-suave">{txt_b}</div></div>', unsafe_allow_html=True)
 
 # --- TECLADO EN 2 COLUMNAS (0 AL 36) ---
 if st.button("0", key="btn_0", use_container_width=True):
