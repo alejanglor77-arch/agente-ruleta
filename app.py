@@ -86,6 +86,18 @@ st.markdown("""
         white-space: nowrap;
     }
 
+    .bitacora-visor {
+        background-color: #f4f4f5;
+        border: 1px solid #d4d4d8;
+        border-radius: 6px;
+        padding: 8px;
+        font-size: 11px;
+        color: #18181b;
+        margin-bottom: 6px;
+        max-height: 150px;
+        overflow-y: auto;
+    }
+
     div[data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
@@ -145,8 +157,6 @@ def guardar_sesion_bitacora(sesion_historial):
     }
     
     bitacora.append(nueva_entrada)
-    
-    # Mantener un límite razonable de sesiones guardadas
     if len(bitacora) > 100:
         bitacora = bitacora[-100:]
         
@@ -163,6 +173,8 @@ if "frios" not in st.session_state:
     st.session_state.frios = []
 if "foco" not in st.session_state:
     st.session_state.foco = "reg"
+if "ver_bitacora" not in st.session_state:
+    st.session_state.ver_bitacora = False
 
 def procesar_numero(num):
     if st.session_state.foco == "cal":
@@ -191,7 +203,6 @@ def calcular_agente(historial, calientes_panel, frios_panel):
     if len(historial) < 2 and not calientes_panel:
         return None, None
 
-    # Cargar bitácora histórica para que la IA aprenda del pasado
     bitacora_pasada = cargar_bitacora()
     conteo_historico_global = {n: 0 for n in range(37)}
     for sesion in bitacora_pasada:
@@ -206,10 +217,8 @@ def calcular_agente(historial, calientes_panel, frios_panel):
     for num in RUEDA_OFICIAL:
         vecinos_cercanos = obtener_vecinos(num, radio=1)
         
-        # Ponderación con frecuencia actual + aprendizaje histórico acumulado
         score = sum(conteo_sesion[v] * 2 for v in vecinos_cercanos)
         score += sum(conteo_historico_global[v] * 0.05 for v in vecinos_cercanos)
-        
         score += sum(3 for v in vecinos_cercanos if v in calientes_panel)
         
         if any(v in ecos_detectados for v in vecinos_cercanos):
@@ -261,12 +270,12 @@ clase_fri = "caja-interactiva caja-activa" if st.session_state.foco == "fri" els
 txt_fri = ", ".join(map(str, st.session_state.frios)) if st.session_state.frios else "Vacío"
 st.markdown(f'<div class="{clase_fri}"><div class="caja-label">Fríos</div><b>{txt_fri}</b></div>', unsafe_allow_html=True)
 
-# 3. BLOQUE REGISTRO Y CONTROLES DE BITÁCORA (GUARDAR / DESCARGAR)
+# 3. BLOQUE REGISTRO Y CONTROLES DE BITÁCORA (BORRAR, GUARDAR, VER VISOR, DESCARGAR)
 if st.button("🎲 Registro [✓]" if st.session_state.foco == "reg" else "🎲 Registro", key="btn_foco_reg", use_container_width=True):
     st.session_state.foco = "reg"
     st.rerun()
 
-col_reg_v, col_del_v = st.columns([0.55, 0.45])
+col_reg_v, col_del_v = st.columns([0.5, 0.5])
 clase_reg = "registro-container caja-activa" if st.session_state.foco == "reg" else "registro-container"
 
 with col_reg_v:
@@ -277,18 +286,22 @@ with col_reg_v:
         st.markdown(f'<div class="{clase_reg}" style="color: #999999;"><div class="registro-texto">Reg (0): Sin registros</div></div>', unsafe_allow_html=True)
 
 with col_del_v:
-    col_sub1, col_sub2, col_sub3 = st.columns(3)
+    col_sub1, col_sub2, col_sub3, col_sub4 = st.columns(4)
     with col_sub1:
         if st.button("⌫", key="btn_del_main", help="Borrar último"):
             borrar_ultimo()
             st.rerun()
     with col_sub2:
-        if st.button("💾", key="btn_save_bitacora", help="Guardar sesión en el Libro de Bitácora"):
+        if st.button("💾", key="btn_save_bitacora", help="Guardar sesión"):
             if st.session_state.historial:
                 if guardar_sesion_bitacora(st.session_state.historial):
                     st.success("¡Guardado!")
                     st.rerun()
     with col_sub3:
+        if st.button("📖", key="btn_toggle_visor", help="Ver Libro de Bitácora"):
+            st.session_state.ver_bitacora = not st.session_state.ver_bitacora
+            st.rerun()
+    with col_sub4:
         bitacora_actual = cargar_bitacora()
         if bitacora_actual:
             datos_json = json.dumps(bitacora_actual, ensure_ascii=False, indent=4)
@@ -297,10 +310,24 @@ with col_del_v:
                 data=datos_json,
                 file_name=f"libro_bitacora_ia_{datetime.now().strftime('%Y%m%d')}.json",
                 mime="application/json",
-                help="Descargar Libro de Bitácora completo"
+                help="Descargar archivo completo"
             )
         else:
-            st.button("📥", disabled=True, help="Sin datos en bitácora")
+            st.button("📥", disabled=True, help="Vacío")
+
+# --- VISOR DESPLEGABLE DEL LIBRO DE BITÁCORA EN PANTALLA ---
+if st.session_state.ver_bitacora:
+    bitacora_datos = cargar_bitacora()
+    st.markdown('<div class="bitacora-visor"><b>📖 LIBRO DE BITÁCORA (MEMORIA IA):</b><br>', unsafe_allow_html=True)
+    if bitacora_datos:
+        for idx, sesion in enumerate(reversed(bitacora_datos), 1):
+            fecha = sesion.get("fecha", "Sin fecha")
+            total = sesion.get("total_tiradas", 0)
+            secuencia = " - ".join(map(str, sesion.get("secuencia", [])))
+            st.markdown(f"<b>Sesión {idx}</b> ({fecha}) | Tiradas: {total}<br><span style='color: #555;'>[{secuencia}]</span><br>---", unsafe_allow_html=True)
+    else:
+        st.markdown("<i>Aún no hay sesiones guardadas en la bitácora. Pulsa 💾 al terminar una partida.</i>", unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # --- GRUPOS A Y B ---
 fuerte, cobertura = calcular_agente(st.session_state.historial, st.session_state.calientes, st.session_state.frios)
