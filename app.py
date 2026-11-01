@@ -2,7 +2,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Agente Ruleta Express", layout="centered")
 
-# Estilos CSS limpios y estables (sin forzar anchos de botones que rompan el scroll)
+# Estilos CSS idénticos a la línea del registro para mantener la estabilidad perfecta
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -95,10 +95,11 @@ st.markdown("""
         padding: 0px !important;
     }
 
-    /* BOTONES ESTÁNDAR Y CÓMODOS QUE NO FUEZAN ANCHO LATERAL */
+    /* Botones de tamaño equilibrado que respetan estrictamente los márgenes */
     div.stButton > button {
+        width: 100% !important;
         height: 28px !important;
-        padding: 0px 10px !important;
+        padding: 0px !important;
         font-size: 12px !important;
         font-weight: 600 !important;
         background-color: #ffffff !important;
@@ -197,7 +198,7 @@ with col_sel_reg:
         st.session_state.foco = "reg"
         st.rerun()
 
-# 5. VISORES VERTICALES (CALIENTES ARRIBA, FRÍOS ABAJO)
+# 5. VISORES VERTICALES
 clase_cal = "caja-interactiva caja-activa" if st.session_state.foco == "cal" else "caja-interactiva"
 txt_cal = ", ".join(map(str, st.session_state.calientes)) if st.session_state.calientes else "Vacío"
 st.markdown(f'<div class="{clase_cal}"><div class="caja-label">Calientes</div><b>{txt_cal}</b></div>', unsafe_allow_html=True)
@@ -206,7 +207,7 @@ clase_fri = "caja-interactiva caja-activa" if st.session_state.foco == "fri" els
 txt_fri = ", ".join(map(str, st.session_state.frios)) if st.session_state.frios else "Vacío"
 st.markdown(f'<div class="{clase_fri}"><div class="caja-label">Fríos</div><b>{txt_fri}</b></div>', unsafe_allow_html=True)
 
-# 6. GRUPOS A Y B VERTICALES (GRUPO A ARRIBA, GRUPO B ABAJO)
+# 6. GRUPOS A Y B VERTICALES
 fuerte, cobertura = calcular_agente(st.session_state.historial, st.session_state.calientes, st.session_state.frios)
 txt_a = ", ".join(map(str, fuerte)) if fuerte else "—"
 txt_b = ", ".join(map(str, cobertura)) if cobertura else "—"
@@ -230,12 +231,19 @@ with col_del_v:
         borrar_ultimo()
         st.rerun()
 
-# 8. UNA ÚNICA COLUMNA VERTICAL LIMPIA Y SEGURA (SIN DESBORDAMIENTO)
-if st.button("0", key="btn_0"):
+# 8. TECLADO EN 2 COLUMNAS (EXACTAMENTE IGUAL DE PROPORCIONADO QUE LA LÍNEA DEL REGISTRO)
+if st.button("0", key="btn_0", use_container_width=True):
     procesar_numero(0)
     st.rerun()
 
-for i in range(1, 37):
-    if st.button(str(i), key=f"btn_{i}"):
-        procesar_numero(i)
-        st.rerun()
+for i in range(1, 37, 2):
+    col_n1, col_n2 = st.columns(2)
+    with col_n1:
+        if st.button(str(i), key=f"btn_{i}"):
+            procesar_numero(i)
+            st.rerun()
+    if i + 1 <= 36:
+        with col_n2:
+            if st.button(str(i + 1), key=f"btn_{i+1}"):
+                procesar_numero(i + 1)
+                st.rerun()
