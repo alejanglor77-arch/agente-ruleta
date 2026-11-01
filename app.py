@@ -2,7 +2,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Agente", layout="centered")
 
-# Estilo para enfocar la pantalla en el teclado y mantener 4 columnas fijas
+# CSS para disposición fluida en fila ultra compacta
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -10,19 +10,19 @@ st.markdown("""
     footer {visibility: hidden;}
     
     .block-container {
-        padding-top: 0.4rem !important;
-        padding-bottom: 0.4rem !important;
-        padding-left: 0.4rem !important;
-        padding-right: 0.4rem !important;
+        padding-top: 0.3rem !important;
+        padding-bottom: 0.3rem !important;
+        padding-left: 0.3rem !important;
+        padding-right: 0.3rem !important;
     }
     
-    /* Inputs de Calientes y Fríos ultra discretos para no quitar espacio */
+    /* Inputs de Calientes y Fríos súper discretos */
     div[data-testid="stTextInput"] {
         margin-bottom: 2px !important;
     }
     div[data-testid="stTextInput"] input {
-        height: 28px !important;
-        padding: 2px 6px !important;
+        height: 26px !important;
+        padding: 2px 4px !important;
         font-size: 11px !important;
     }
     div[data-testid="stTextInput"] label {
@@ -59,7 +59,7 @@ st.markdown("""
         color: #555555;
     }
 
-    /* Visor de registro tipo cinta de calculadora */
+    /* Visor de registro con botón de borrar */
     .registro-container {
         display: flex;
         justify-content: space-between;
@@ -80,31 +80,49 @@ st.markdown("""
         margin-right: 6px;
     }
 
-    /* Estructura estricta para mantener 4 columnas bien alineadas en el iPhone */
-    div[data-testid="stHorizontalBlock"] {
-        display: flex !important;
-        flex-direction: row !important;
-        flex-wrap: nowrap !important;
-        gap: 3px !important;
+    /* Teclado en modo FILA fluida y compacta */
+    .teclado-filas {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        justify-content: center;
+        width: 100%;
+        margin-top: 4px;
     }
-    div[data-testid="column"] {
-        flex: 1 1 0px !important;
-        min-width: 0px !important;
-        padding: 0px !important;
+    .btn-num-fila {
+        flex: 1 0 18%; /* Permite 4-5 botones por fila según la pantalla */
+        max-width: 23%;
+        height: 32px;
+        background-color: #ffffff;
+        border: 1px solid #dcdcdc;
+        border-radius: 5px;
+        color: #333333;
+        font-weight: 600;
+        font-size: 13px;
+        text-align: center;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
     }
-
-    /* Botones principales para el teclado numérico rápido */
-    div.stButton > button {
-        width: 100% !important;
-        height: 34px !important;
-        padding: 0px !important;
-        font-size: 13px !important;
-        font-weight: 600 !important;
-        background-color: #ffffff !important;
-        color: #333333 !important;
-        border: 1px solid #dcdcdc !important;
-        border-radius: 5px !important;
-        margin: 0px !important;
+    .btn-zero-fila {
+        flex: 1 0 100%;
+        max-width: 100%;
+        height: 32px;
+        background-color: #f4f4f5;
+        border: 1px solid #dcdcdc;
+        border-radius: 5px;
+        color: #18181b;
+        font-weight: 700;
+        font-size: 14px;
+        text-align: center;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 2px;
+        box-sizing: border-box;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -113,12 +131,27 @@ st.markdown("""
 if "historial" not in st.session_state:
     st.session_state.historial = []
 
-# 1. Calientes y Fríos (Discretos arriba)
+# Procesamiento de clicks rápido desde el teclado en fila
+query_params = st.query_params
+
+if "num" in query_params:
+    val = int(query_params["num"])
+    st.session_state.historial.append(val)
+    st.query_params.clear()
+    st.rerun()
+
+if "del" in query_params:
+    if len(st.session_state.historial) > 0:
+        st.session_state.historial.pop()
+    st.query_params.clear()
+    st.rerun()
+
+# 1. Calientes y Fríos discretos arriba
 col_cal, col_fri = st.columns(2)
 with col_cal:
-    st.text_input("Calientes", placeholder="3, 17, 25...", key="in_cal")
+    st.text_input("Calientes (opcional)", placeholder="Ej: 3, 17...", key="in_cal")
 with col_fri:
-    st.text_input("Fríos", placeholder="0, 12, 30...", key="in_fri")
+    st.text_input("Fríos (opcional)", placeholder="Ej: 0, 12...", key="in_fri")
 
 # 2. Recomendación principal (Grupo A y Grupo B)
 col_a, col_b = st.columns(2)
@@ -139,33 +172,28 @@ with col_b:
     """, unsafe_allow_html=True)
 
 # 3. Visor de registro acumulativo + Botón ⌫ Borrar
-col_reg, col_del = st.columns([0.75, 0.25])
+if st.session_state.historial:
+    texto_registro = " - ".join(map(str, st.session_state.historial))
+    st.markdown(f"""
+        <div class="registro-container">
+            <div class="registro-texto"><b>Reg ({len(st.session_state.historial)}):</b> {texto_registro}</div>
+            <a href="?del=1" target="_self" style="text-decoration:none; color:#333; font-weight:bold; background:#e4e4e7; padding:2px 6px; border-radius:4px; border:1px solid #d4d4d8;">⌫ Borrar</a>
+        </div>
+    """, unsafe_allow_html=True)
+else:
+    st.markdown("""
+        <div class="registro-container" style="color: #999999;">
+            <div class="registro-texto">Reg (0): Sin registros</div>
+        </div>
+    """, unsafe_allow_html=True)
 
-with col_reg:
-    if st.session_state.historial:
-        texto_registro = " - ".join(map(str, st.session_state.historial))
-        st.markdown(f'<div class="registro-container"><div class="registro-texto"><b>Reg ({len(st.session_state.historial)}):</b> {texto_registro}</div></div>', unsafe_allow_html=True)
-    else:
-        st.markdown('<div class="registro-container" style="color: #999999;"><div class="registro-texto">Reg (0): Sin registros</div></div>', unsafe_allow_html=True)
+# 4. Teclado compacto organizado por filas adaptables
+html_teclado = '<div class="teclado-filas">'
+html_teclado += '<a href="?num=0" target="_self" class="btn-zero-fila">0</a>'
 
-with col_del:
-    if st.button("⌫ Borrar", key="btn_del"):
-        if len(st.session_state.historial) > 0:
-            st.session_state.historial.pop()
-            st.rerun()
+for n in range(1, 37):
+    html_teclado += f'<a href="?num={n}" target="_self" class="btn-num-fila">{n}</a>'
 
-# 4. Botón "0"
-if st.button("0", key="btn_0", use_container_width=True):
-    st.session_state.historial.append(0)
-    st.rerun()
+html_teclado += '</div>'
 
-# 5. Teclado ordenado fila por fila (4 columnas perfectas)
-for fila in range(0, 9):
-    cols = st.columns(4)
-    for col_idx in range(4):
-        num = fila * 4 + col_idx + 1
-        if num <= 36:
-            with cols[col_idx]:
-                if st.button(str(num), key=f"btn_{num}"):
-                    st.session_state.historial.append(num)
-                    st.rerun()
+st.markdown(html_teclado, unsafe_allow_html=True)
