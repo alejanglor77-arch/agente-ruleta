@@ -3,7 +3,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Agente", layout="centered")
 
-# CSS para disposición fluida y tonos discretos
+# Estilo para filas fluidas y tonos tenues
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -78,84 +78,25 @@ st.markdown("""
         margin-right: 6px;
     }
 
-    .teclado-filas {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 4px;
-        justify-content: center;
-        width: 100%;
-        margin-top: 4px;
-    }
-    .btn-num-fila {
-        flex: 1 0 18%;
-        max-width: 23%;
-        height: 32px;
-        background-color: #ffffff;
-        border: 1px solid #dcdcdc;
-        border-radius: 5px;
-        color: #333333;
-        font-weight: 600;
-        font-size: 13px;
-        text-align: center;
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-sizing: border-box;
-    }
-    .btn-zero-fila {
-        flex: 1 0 100%;
-        max-width: 100%;
-        height: 32px;
-        background-color: #ffffff;
-        border: 1px solid #dcdcdc;
-        border-radius: 5px;
-        color: #18181b;
-        font-weight: 700;
-        font-size: 14px;
-        text-align: center;
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 2px;
-        box-sizing: border-box;
-    }
-
-    /* Modificadores discretos para resaltados */
-    .btn-caliente {
-        background-color: #fff3e0 !important; /* Calientito tenue */
+    /* Modificadores de color para botones */
+    div.stButton > button.btn-caliente {
+        background-color: #fff3e0 !important;
         border: 1px solid #ffe0b2 !important;
         color: #8c4a00 !important;
     }
-    .btn-frio {
-        background-color: #e3f2fd !important; /* Azul pastel tenue */
+    div.stButton > button.btn-frio {
+        background-color: #e3f2fd !important;
         border: 1px solid #bbdefb !important;
         color: #0d47a1 !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# Estado inicial del historial
+# Estado persistente en memoria del servidor (NUNCA se borra al teclear)
 if "historial" not in st.session_state:
     st.session_state.historial = []
 
-# Captura de pulsaciones de teclado o borrado
-query_params = st.query_params
-
-if "num" in query_params:
-    val = int(query_params["num"])
-    st.session_state.historial.append(val)
-    st.query_params.clear()
-    st.rerun()
-
-if "del" in query_params:
-    if len(st.session_state.historial) > 0:
-        st.session_state.historial.pop()
-    st.query_params.clear()
-    st.rerun()
-
-# función para extraer números de los inputs de texto
+# Función para extraer números de los campos de texto
 def parse_numeros(texto):
     if not texto:
         return set()
@@ -190,43 +131,44 @@ with col_b:
         </div>
     """, unsafe_allow_html=True)
 
-# 3. Visor de registro acumulativo + Botón ⌫ Borrar
-if st.session_state.historial:
-    texto_registro = " - ".join(map(str, st.session_state.historial))
-    st.markdown(f"""
-        <div class="registro-container">
-            <div class="registro-texto"><b>Reg ({len(st.session_state.historial)}):</b> {texto_registro}</div>
-            <a href="?del=1" target="_self" style="text-decoration:none; color:#333; font-weight:bold; background:#e4e4e7; padding:2px 6px; border-radius:4px; border:1px solid #d4d4d8;">⌫ Borrar</a>
-        </div>
-    """, unsafe_allow_html=True)
-else:
-    st.markdown("""
-        <div class="registro-container" style="color: #999999;">
-            <div class="registro-texto">Reg (0): Sin registros</div>
-        </div>
-    """, unsafe_allow_html=True)
+# 3. Visor de registro acumulativo continuo + Botón ⌫ Borrar
+col_reg, col_del = st.columns([0.75, 0.25])
 
-# 4. Teclado en filas con resaltado dinámico tenue
-html_teclado = '<div class="teclado-filas">'
+with col_reg:
+    if st.session_state.historial:
+        texto_registro = " - ".join(map(str, st.session_state.historial))
+        st.markdown(f'<div class="registro-container"><div class="registro-texto"><b>Reg ({len(st.session_state.historial)}):</b> {texto_registro}</div></div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="registro-container" style="color: #999999;"><div class="registro-texto">Reg (0): Sin registros</div></div>', unsafe_allow_html=True)
 
-# Determinar clase del botón 0
-clase_zero = "btn-zero-fila"
-if 0 in set_calientes:
-    clase_zero += " btn-caliente"
-elif 0 in set_frios:
-    clase_zero += " btn-frio"
+with col_del:
+    if st.button("⌫ Borrar", key="btn_del"):
+        if len(st.session_state.historial) > 0:
+            st.session_state.historial.pop()
+            st.rerun()
 
-html_teclado += f'<a href="?num=0" target="_self" class="{clase_zero}">0</a>'
+# Dynamic Styling Script
+st.markdown("<script>", unsafe_allow_html=True)
 
-for n in range(1, 37):
-    clase_btn = "btn-num-fila"
-    if n in set_calientes:
-        clase_btn += " btn-caliente"
-    elif n in set_frios:
-        clase_btn += " btn-frio"
-    
-    html_teclado += f'<a href="?num={n}" target="_self" class="{clase_btn}">{n}</a>'
+# 4. Botón 0
+if st.button("0", key="btn_0", use_container_width=True):
+    st.session_state.historial.append(0)
+    st.rerun()
 
-html_teclado += '</div>'
-
-st.markdown(html_teclado, unsafe_allow_html=True)
+# 5. Teclado en cuadrícula de 4 columnas nativas con estado persistente
+for fila in range(0, 9):
+    cols = st.columns(4)
+    for col_idx in range(4):
+        num = fila * 4 + col_idx + 1
+        if num <= 36:
+            with cols[col_idx]:
+                # Asignación de clase de color tenue según inputs
+                clase_color = ""
+                if num in set_calientes:
+                    clase_color = "btn-caliente"
+                elif num in set_frios:
+                    clase_color = "btn-frio"
+                
+                if st.button(str(num), key=f"btn_{num}"):
+                    st.session_state.historial.append(num)
+                    st.rerun()
