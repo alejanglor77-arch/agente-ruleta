@@ -2,7 +2,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Agente", layout="centered")
 
-# Ocultar cabeceras y definir la cuadrícula CSS indestructible
+# Estilo compacto para iPhone 12 y cuadrícula rígida de 4 columnas
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -60,43 +60,29 @@ st.markdown("""
         margin-right: 8px;
     }
     
-    /* Cuadrícula fija de 4 columnas en HTML */
-    .grid-container {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 3px;
-        width: 100%;
-        box-sizing: border-box;
+    /* Regla rígida para forzar siempre 4 columnas sin romper el diseño */
+    div[data-testid="stHorizontalBlock"] {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        gap: 3px !important;
     }
-    .btn-kbd {
-        background-color: #ffffff;
-        border: 1px solid #dcdcdc;
-        color: #333333;
-        padding: 6px 0;
-        text-align: center;
-        font-weight: 600;
-        font-size: 13px;
-        border-radius: 4px;
-        cursor: pointer;
-        width: 100%;
-        box-sizing: border-box;
+    div[data-testid="column"] {
+        width: 100% !important;
+        min-width: 0px !important;
+        flex: 1 1 0px !important;
     }
-    .btn-kbd:active {
-        background-color: #e4e4e7;
-    }
-    .btn-zero {
-        grid-column: span 4;
-        margin-bottom: 3px;
-    }
-    .btn-undo-style {
-        background-color: #e4e4e7;
-        border: 1px solid #d4d4d8;
-        color: #333333;
-        padding: 2px 8px;
-        font-size: 11px;
-        font-weight: bold;
-        border-radius: 4px;
-        cursor: pointer;
+    div.stButton > button {
+        width: 100% !important;
+        height: 32px !important;
+        padding: 0px !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        background-color: #ffffff !important;
+        color: #333333 !important;
+        border: 1px solid #dcdcdc !important;
+        border-radius: 4px !important;
+        margin: 0px !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -104,21 +90,6 @@ st.markdown("""
 # Estado persistente del historial
 if "historial" not in st.session_state:
     st.session_state.historial = []
-
-# Procesar acciones recibidas mediante parámetros URL sin resetear el estado
-query_params = st.query_params
-
-if "val" in query_params:
-    num_pulsado = int(query_params["val"])
-    st.session_state.historial.append(num_pulsado)
-    st.query_params.clear()
-    st.rerun()
-
-if "act" in query_params and query_params["act"] == "undo":
-    if len(st.session_state.historial) > 0:
-        st.session_state.historial.pop()
-    st.query_params.clear()
-    st.rerun()
 
 # Tarjetas superiores sobrias
 col_a, col_b = st.columns(2)
@@ -139,28 +110,34 @@ with col_b:
         </div>
     """, unsafe_allow_html=True)
 
-# Visor de registro con avance continuo y botón de borrado
-if st.session_state.historial:
-    texto_registro = " - ".join(map(str, st.session_state.historial))
-    st.markdown(f"""
-        <div class="registro-container">
-            <div class="registro-texto"><b>Reg ({len(st.session_state.historial)}):</b> {texto_registro}</div>
-            <a href="?act=undo" target="_self" style="text-decoration:none;"><button class="btn-undo-style">⌫ Borrar</button></a>
-        </div>
-    """, unsafe_allow_html=True)
-else:
-    st.markdown("""
-        <div class="registro-container" style="color: #999999;">
-            <div class="registro-texto">Reg (0): Sin registros</div>
-        </div>
-    """, unsafe_allow_html=True)
+# Visor del historial acumulado y botón de borrado en la misma fila
+col_reg, col_del = st.columns([0.75, 0.25])
 
-# Teclado en HTML puro para forzar las 4 columnas en iPhone 12 sin desordenar
-html_teclado = '<a href="?val=0" target="_self" style="text-decoration:none;"><button class="btn-kbd btn-zero">0</button></a><div class="grid-container">'
+with col_reg:
+    if st.session_state.historial:
+        texto_registro = " - ".join(map(str, st.session_state.historial))
+        st.markdown(f'<div class="registro-container"><div class="registro-texto"><b>Reg ({len(st.session_state.historial)}):</b> {texto_registro}</div></div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="registro-container" style="color: #999999;"><div class="registro-texto">Reg (0): Sin registros</div></div>', unsafe_allow_html=True)
 
-for n in range(1, 37):
-    html_teclado += f'<a href="?val={n}" target="_self" style="text-decoration:none;"><button class="btn-kbd">{n}</button></a>'
+with col_del:
+    if st.button("⌫ Borrar", key="btn_del"):
+        if len(st.session_state.historial) > 0:
+            st.session_state.historial.pop()
+            st.rerun()
 
-html_teclado += "</div>"
+# Botón Cero
+if st.button("0", key="btn_0", use_container_width=True):
+    st.session_state.historial.append(0)
+    st.rerun()
 
-st.markdown(html_teclado, unsafe_allow_html=True)
+# Teclado en 4 columnas forzadas por CSS flexbox
+for fila in range(0, 9):
+    cols = st.columns(4)
+    for col_idx in range(4):
+        num = fila * 4 + col_idx + 1
+        if num <= 36:
+            with cols[col_idx]:
+                if st.button(str(num), key=f"btn_{num}"):
+                    st.session_state.historial.append(num)
+                    st.rerun()
