@@ -191,17 +191,34 @@ with col_del_v:
         borrar_ultimo()
         st.rerun()
 
-# 6. Coloreado tenue inyectado directo
-css_colores = "<style>"
-for n in range(37):
-    if n in st.session_state.calientes:
-        css_colores += f"div.stButton > button[key='btn_{n}'] {{ background-color: #fff3e0 !important; border: 1px solid #ffe0b2 !important; color: #8c4a00 !important; font-weight: bold !important; }}"
-    elif n in st.session_state.frios:
-        css_colores += f"div.stButton > button[key='btn_{n}'] {{ background-color: #e3f2fd !important; border: 1px solid #bbdefb !important; color: #0d47a1 !important; font-weight: bold !important; }}"
-css_colores += "</style>"
-st.markdown(css_colores, unsafe_allow_html=True)
+# 6. INYECCIÓN DE COLORES DIRECTA EN EL TECLADO
+reglas_css = []
+for num in st.session_state.calientes:
+    reglas_css.append(f"""
+        div[data-testid="stColumn"] div.stButton button:has(p:text-is("{num}")),
+        div.stButton button[data-testid="stBaseButton-secondary"]:has(p:text-is("{num}")) {{
+            background-color: #fff3e0 !important;
+            border: 1px solid #ffe0b2 !important;
+            color: #8c4a00 !important;
+            font-weight: 800 !important;
+        }}
+    """)
 
-# 7. Teclado nativo estable (Sin recargas externas)
+for num in st.session_state.frios:
+    reglas_css.append(f"""
+        div[data-testid="stColumn"] div.stButton button:has(p:text-is("{num}")),
+        div.stButton button[data-testid="stBaseButton-secondary"]:has(p:text-is("{num}")) {{
+            background-color: #e3f2fd !important;
+            border: 1px solid #bbdefb !important;
+            color: #0d47a1 !important;
+            font-weight: 800 !important;
+        }}
+    """)
+
+if reglas_css:
+    st.markdown(f"<style>{''.join(reglas_css)}</style>", unsafe_allow_html=True)
+
+# 7. Teclado nativo estable
 if st.button("0", key="btn_0", use_container_width=True):
     procesar_numero(0)
     st.rerun()
