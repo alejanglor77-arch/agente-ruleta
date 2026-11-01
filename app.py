@@ -167,12 +167,13 @@ with col_del_v:
         borrar_ultimo()
         st.rerun()
 
-# GENERADOR DINÁMICO DE COLORES TENUES PARA EL TECLADO
+# FORZADO DE COLORES POR ARIA-LABEL
 css_colores = "<style>"
 for n in range(37):
+    str_n = str(n)
     if n in st.session_state.calientes:
         css_colores += f"""
-            div.stButton > button[key='btn_{n}'] {{
+            button[aria-label="{str_n}"] {{
                 background-color: #fff3e0 !important;
                 border: 1px solid #ffe0b2 !important;
                 color: #8c4a00 !important;
@@ -181,7 +182,7 @@ for n in range(37):
         """
     elif n in st.session_state.frios:
         css_colores += f"""
-            div.stButton > button[key='btn_{n}'] {{
+            button[aria-label="{str_n}"] {{
                 background-color: #e3f2fd !important;
                 border: 1px solid #bbdefb !important;
                 color: #0d47a1 !important;
