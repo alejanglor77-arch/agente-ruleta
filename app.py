@@ -2,7 +2,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Agente Ruleta Express", layout="centered")
 
-# Estilos CSS limpios y estables de la versión anterior
+# Estilos CSS idénticos a la línea del registro para mantener la estabilidad perfecta
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -95,6 +95,7 @@ st.markdown("""
         padding: 0px !important;
     }
 
+    /* Botones de tamaño equilibrado que respetan estrictamente los márgenes */
     div.stButton > button {
         width: 100% !important;
         height: 28px !important;
@@ -179,7 +180,7 @@ def calcular_agente(historial, calientes_panel, frios_panel):
 
     return sorted(apuesta_fuerte), sorted(cobertura_inercia)
 
-# 4. SELECTORES DE FOCO SUPERIOR (BOTONES SEPARADOS)
+# 4. SELECTOR DE FOCO SUPERIOR
 col_sel_cal, col_sel_fri, col_sel_reg = st.columns(3)
 
 with col_sel_cal:
@@ -197,7 +198,7 @@ with col_sel_reg:
         st.session_state.foco = "reg"
         st.rerun()
 
-# 5. VISORES VERTICALES (CALIENTES Y FRÍOS)
+# 5. VISORES VERTICALES
 clase_cal = "caja-interactiva caja-activa" if st.session_state.foco == "cal" else "caja-interactiva"
 txt_cal = ", ".join(map(str, st.session_state.calientes)) if st.session_state.calientes else "Vacío"
 st.markdown(f'<div class="{clase_cal}"><div class="caja-label">Calientes</div><b>{txt_cal}</b></div>', unsafe_allow_html=True)
@@ -230,7 +231,7 @@ with col_del_v:
         borrar_ultimo()
         st.rerun()
 
-# 8. TECLADO EN 2 COLUMNAS (0 AL 36)
+# 8. TECLADO EN 2 COLUMNAS (EXACTAMENTE IGUAL DE PROPORCIONADO QUE LA LÍNEA DEL REGISTRO)
 if st.button("0", key="btn_0", use_container_width=True):
     procesar_numero(0)
     st.rerun()
@@ -238,11 +239,11 @@ if st.button("0", key="btn_0", use_container_width=True):
 for i in range(1, 37, 2):
     col_n1, col_n2 = st.columns(2)
     with col_n1:
-        if st.button(str(i), key=f"btn_{i}", use_container_width=True):
+        if st.button(str(i), key=f"btn_{i}"):
             procesar_numero(i)
             st.rerun()
     if i + 1 <= 36:
         with col_n2:
-            if st.button(str(i + 1), key=f"btn_{i+1}", use_container_width=True):
+            if st.button(str(i + 1), key=f"btn_{i+1}"):
                 procesar_numero(i + 1)
                 st.rerun()
