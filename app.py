@@ -2,7 +2,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Agente", layout="centered")
 
-# Estilo para FILAS fluidas y tonos tenues
+# Estilo para pantalla sin scroll en iPhone 12
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -79,63 +79,30 @@ st.markdown("""
         white-space: nowrap;
     }
 
-    /* Teclado en filas adaptables HTML */
-    .teclado-filas {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 4px;
-        justify-content: center;
-        width: 100%;
-        margin-top: 4px;
+    /* Filas nativas ultra compactas */
+    div[data-testid="stHorizontalBlock"] {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        gap: 3px !important;
     }
-    .btn-num-fila {
-        flex: 1 0 18%;
-        max-width: 23%;
-        height: 32px;
-        background-color: #ffffff;
-        border: 1px solid #dcdcdc;
-        border-radius: 5px;
-        color: #333333;
-        font-weight: 600;
-        font-size: 13px;
-        text-align: center;
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-sizing: border-box;
-    }
-    .btn-zero-fila {
-        flex: 1 0 100%;
-        max-width: 100%;
-        height: 32px;
-        background-color: #ffffff;
-        border: 1px solid #dcdcdc;
-        border-radius: 5px;
-        color: #18181b;
-        font-weight: 700;
-        font-size: 14px;
-        text-align: center;
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 2px;
-        box-sizing: border-box;
+    div[data-testid="column"] {
+        flex: 1 1 0px !important;
+        min-width: 0px !important;
+        padding: 0px !important;
     }
 
-    /* Estilos directos de color tenue */
-    .btn-caliente {
-        background-color: #fff3e0 !important;
-        border: 1px solid #ffe0b2 !important;
-        color: #8c4a00 !important;
-        font-weight: 800 !important;
-    }
-    .btn-frio {
-        background-color: #e3f2fd !important;
-        border: 1px solid #bbdefb !important;
-        color: #0d47a1 !important;
-        font-weight: 800 !important;
+    div.stButton > button {
+        width: 100% !important;
+        height: 32px !important;
+        padding: 0px !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        background-color: #ffffff !important;
+        color: #333333 !important;
+        border: 1px solid #dcdcdc !important;
+        border-radius: 5px !important;
+        margin: 0px !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -150,11 +117,7 @@ if "frios" not in st.session_state:
 if "foco" not in st.session_state:
     st.session_state.foco = "reg"
 
-# Procesar parámetros de URL (Pulsación de tecla HTML)
-query_params = st.query_params
-
-if "press" in query_params:
-    num = int(query_params["press"])
+def procesar_numero(num):
     if st.session_state.foco == "cal":
         if num not in st.session_state.calientes and len(st.session_state.calientes) < 5:
             st.session_state.calientes.insert(0, num)
@@ -163,10 +126,16 @@ if "press" in query_params:
             st.session_state.frios.insert(0, num)
     else:
         st.session_state.historial.insert(0, num)
-    st.query_params.clear()
-    st.rerun()
 
-# 2. Selector de Foco (Checks superiores)
+def borrar_ultimo():
+    if st.session_state.foco == "cal" and st.session_state.calientes:
+        st.session_state.calientes.pop(0)
+    elif st.session_state.foco == "fri" and st.session_state.frios:
+        st.session_state.frios.pop(0)
+    elif st.session_state.foco == "reg" and st.session_state.historial:
+        st.session_state.historial.pop(0)
+
+# 2. Selector de Foco (Checks arriba)
 col_sel_cal, col_sel_fri, col_sel_reg = st.columns(3)
 
 with col_sel_cal:
@@ -198,7 +167,7 @@ with col_fri_v:
     txt_fri = ", ".join(map(str, st.session_state.frios)) if st.session_state.frios else "Vacío"
     st.markdown(f'<div class="{clase_fri}"><div class="caja-label">Fríos</div><b>{txt_fri}</b></div>', unsafe_allow_html=True)
 
-# 4. Tarjetas limpias
+# 4. Tarjetas totalmente vacías de inicio
 col_a, col_b = st.columns(2)
 with col_a:
     st.markdown('<div class="card-discreta"><div class="card-titulo">Grupo A</div><div class="card-valores">—</div></div>', unsafe_allow_html=True)
@@ -219,36 +188,30 @@ with col_reg_v:
 
 with col_del_v:
     if st.button("⌫ Borrar", key="btn_del_main"):
-        if st.session_state.foco == "cal" and st.session_state.calientes:
-            st.session_state.calientes.pop(0)
-        elif st.session_state.foco == "fri" and st.session_state.frios:
-            st.session_state.frios.pop(0)
-        elif st.session_state.foco == "reg" and st.session_state.historial:
-            st.session_state.historial.pop(0)
+        borrar_ultimo()
         st.rerun()
 
-# 6. Teclado HTML (Coloreado directo garantizado)
-html_teclado = '<div class="teclado-filas">'
-
-# Botón 0
-clase_zero = "btn-zero-fila"
-if 0 in st.session_state.calientes:
-    clase_zero += " btn-caliente"
-elif 0 in st.session_state.frios:
-    clase_zero += " btn-frio"
-
-html_teclado += f'<a href="?press=0" target="_self" class="{clase_zero}">0</a>'
-
-# Botones 1 al 36
-for n in range(1, 37):
-    clase_btn = "btn-num-fila"
+# 6. Coloreado tenue inyectado directo
+css_colores = "<style>"
+for n in range(37):
     if n in st.session_state.calientes:
-        clase_btn += " btn-caliente"
+        css_colores += f"div.stButton > button[key='btn_{n}'] {{ background-color: #fff3e0 !important; border: 1px solid #ffe0b2 !important; color: #8c4a00 !important; font-weight: bold !important; }}"
     elif n in st.session_state.frios:
-        clase_btn += " btn-frio"
-    
-    html_teclado += f'<a href="?press={n}" target="_self" class="{clase_btn}">{n}</a>'
+        css_colores += f"div.stButton > button[key='btn_{n}'] {{ background-color: #e3f2fd !important; border: 1px solid #bbdefb !important; color: #0d47a1 !important; font-weight: bold !important; }}"
+css_colores += "</style>"
+st.markdown(css_colores, unsafe_allow_html=True)
 
-html_teclado += '</div>'
+# 7. Teclado nativo estable (Sin recargas externas)
+if st.button("0", key="btn_0", use_container_width=True):
+    procesar_numero(0)
+    st.rerun()
 
-st.markdown(html_teclado, unsafe_allow_html=True)
+for fila in range(0, 9):
+    cols = st.columns(4)
+    for col_idx in range(4):
+        num = fila * 4 + col_idx + 1
+        if num <= 36:
+            with cols[col_idx]:
+                if st.button(str(num), key=f"btn_{num}"):
+                    procesar_numero(num)
+                    st.rerun()
