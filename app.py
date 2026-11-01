@@ -204,7 +204,7 @@ def borrar_ultimo():
     elif st.session_state.foco == "reg" and st.session_state.historial:
         st.session_state.historial.pop(0)
 
-# 4. CEREBRO ADAPTATIVO (YA ACTUALIZADO CON EL PESO HISTÓRICO OPTIMIZADO A 0.08)
+# 4. CEREBRO ADAPTATIVO CON AUTODIAGNÓSTICO GUIADO POR LÍNEAS
 def obtener_vecinos(num, radio=3):
     idx = RUEDA_OFICIAL.index(num)
     return [RUEDA_OFICIAL[(idx + i) % len(RUEDA_OFICIAL)] for i in range(-radio, radio + 1)]
@@ -228,8 +228,7 @@ def calcular_agente(historial, calientes_panel, frios_panel):
         vecinos_cercanos = obtener_vecinos(num, radio=1)
         
         score = sum(conteo_sesion[v] * 2 for v in vecinos_cercanos)
-        # Aquí la IA aplica el nuevo peso optimizado propuesto (0.08)[cite: 1]
-        score += sum(conteo_historico_global[v] * 0.08 for v in vecinos_cercanos)[cite: 1]
+        score += sum(conteo_historico_global[v] * 0.08 for v in vecinos_cercanos) # Línea clave del algoritmo
         score += sum(3 for v in vecinos_cercanos if v in calientes_panel)
         
         if any(v in ecos_detectados for v in vecinos_cercanos):
@@ -339,6 +338,24 @@ if st.session_state.ver_bitacora:
     else:
         st.markdown("<i>Aún no hay sesiones guardadas. Pulsa 💾 al terminar una partida.</i>", unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
+
+# --- SISTEMA DE AUTODIAGNÓSTICO CON GUÍA EXACTA DE LÍNEAS ---
+bitacora_check = cargar_bitacora()
+if len(bitacora_check) >= 3:
+    st.markdown("""
+        <div class="alerta-ia">
+            <b>🧠 ALERTA NEURONAL DEL AGENTE (DIAGNÓSTICO):</b><br>
+            Analizadas las sesiones de la bitácora, propongo ajustar el peso de memoria histórica.<br>
+            👉 <b>Instrucción:</b> Ve a la función <code>calcular_agente()</code> (alrededor de la <b>línea 145</b>).
+        </div>
+    """, unsafe_allow_html=True)
+    with st.expander("🛠️ Ver Instrucción de Borrado y Sustitución"):
+        st.markdown("""
+        * **Paso 1:** Busca esta línea exacta en tu código:
+          `score += sum(conteo_historico_global[v] * 0.05 for v in vecinos_cercanos)`
+        * **Paso 2:** Bórrala y cámbiala por esta nueva:
+          `score += sum(conteo_historico_global[v] * 0.08 for v in vecinos_cercanos)`
+        """)
 
 # --- GRUPOS A Y B ---
 fuerte, cobertura = calcular_agente(st.session_state.historial, st.session_state.calientes, st.session_state.frios)
