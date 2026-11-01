@@ -1,8 +1,8 @@
 import streamlit as st
 
-st.set_page_config(page_title="Agente", layout="centered")
+st.set_page_config(page_title="Agente Ruleta Express", layout="centered")
 
-# Estilo para pantalla sin scroll en iPhone 12
+# Estilo para pantalla sin scroll en iPhone 12 (Diseño validado intacto)
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -31,10 +31,15 @@ st.markdown("""
         color: #888888;
         margin-bottom: 1px;
     }
-    .card-valores {
+    .card-valores-fuerte {
         font-size: 14px;
-        font-weight: bold;
-        color: #1a1a1a;
+        font-weight: 800;
+        color: #d32f2f;
+    }
+    .card-valores-suave {
+        font-size: 13px;
+        font-weight: 700;
+        color: #0288d1;
     }
 
     .caja-interactiva {
@@ -79,7 +84,6 @@ st.markdown("""
         white-space: nowrap;
     }
 
-    /* Filas nativas ultra compactas */
     div[data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
@@ -107,7 +111,13 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 1. Memoria persistente
+# 1. DISPOSICIÓN FÍSICA REAL DE LA RULETA EUROPEA
+RUEDA_OFICIAL = [
+    0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10,
+    5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26
+]
+
+# 2. MEMORIA DE SESIÓN
 if "historial" not in st.session_state:
     st.session_state.historial = []
 if "calientes" not in st.session_state:
@@ -135,7 +145,42 @@ def borrar_ultimo():
     elif st.session_state.foco == "reg" and st.session_state.historial:
         st.session_state.historial.pop(0)
 
-# 2. Selector de Foco (Checks arriba)
+# 3. LÓGICA COMPLETA DEL AGENTE (MATEMÁTICA Y SECTORES ORIGINALES)
+def obtener_vecinos(num, radio=2):
+    idx = RUEDA_OFICIAL.index(num)
+    return [RUEDA_OFICIAL[(idx + i) % len(RUEDA_OFICIAL)] for i in range(-radio, radio + 1)]
+
+def calcular_agente(historial, calientes_panel, frios_panel):
+    if len(historial) < 2 and not calientes_panel:
+        return None, None
+
+    ventana = historial[:30] if historial else []
+    conteo_sesion = {n: ventana.count(n) for n in range(37)}
+    
+    puntuaciones = {}
+    for num in RUEDA_OFICIAL:
+        vecinos_cercanos = obtener_vecinos(num, radio=1)
+        score = sum(conteo_sesion[v] * 2 for v in vecinos_cercanos)
+        score += sum(3 for v in vecinos_cercanos if v in calientes_panel)
+        score -= sum(4 for v in vecinos_cercanos if v in frios_panel)
+        puntuaciones[num] = score
+
+    ordenados = sorted(puntuaciones, key=puntuaciones.get, reverse=True)
+    max_score = puntuaciones[ordenados[0]]
+    
+    apuesta_fuerte = []
+    for n in ordenados:
+        if n in frios_panel:
+            continue
+        if len(apuesta_fuerte) < 3 or (len(apuesta_fuerte) < 6 and puntuaciones[n] >= max_score * 0.7):
+            apuesta_fuerte.append(n)
+
+    ultimo_num = historial[0] if historial else (calientes_panel[0] if calientes_panel else 0)
+    cobertura_inercia = [n for n in obtener_vecinos(ultimo_num, radio=2) if n not in apuesta_fuerte and n not in frios_panel]
+
+    return sorted(apuesta_fuerte), sorted(cobertura_inercia)
+
+# 4. SELECTOR DE FOCO (Checks superiores)
 col_sel_cal, col_sel_fri, col_sel_reg = st.columns(3)
 
 with col_sel_cal:
@@ -153,7 +198,7 @@ with col_sel_reg:
         st.session_state.foco = "reg"
         st.rerun()
 
-# 3. Visores
+# 5. VISORES INTERACTIVOS
 col_cal_v, col_fri_v = st.columns(2)
 
 clase_cal = "caja-interactiva caja-activa" if st.session_state.foco == "cal" else "caja-interactiva"
@@ -167,14 +212,19 @@ with col_fri_v:
     txt_fri = ", ".join(map(str, st.session_state.frios)) if st.session_state.frios else "Vacío"
     st.markdown(f'<div class="{clase_fri}"><div class="caja-label">Fríos</div><b>{txt_fri}</b></div>', unsafe_allow_html=True)
 
-# 4. Tarjetas totalmente vacías de inicio
+# 6. EVALUACIÓN Y MOSTRADO DE GRUPO A Y GRUPO B
+fuerte, cobertura = calcular_agente(st.session_state.historial, st.session_state.calientes, st.session_state.frios)
+
+txt_a = ", ".join(map(str, fuerte)) if fuerte else "—"
+txt_b = ", ".join(map(str, cobertura)) if cobertura else "—"
+
 col_a, col_b = st.columns(2)
 with col_a:
-    st.markdown('<div class="card-discreta"><div class="card-titulo">Grupo A</div><div class="card-valores">—</div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="card-discreta"><div class="card-titulo">Grupo A (Ataque 70%)</div><div class="card-valores-fuerte">{txt_a}</div></div>', unsafe_allow_html=True)
 with col_b:
-    st.markdown('<div class="card-discreta"><div class="card-titulo">Grupo B</div><div class="card-valores">—</div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="card-discreta"><div class="card-titulo">Grupo B (Cobertura 30%)</div><div class="card-valores-suave">{txt_b}</div></div>', unsafe_allow_html=True)
 
-# 5. Visor de Registro y Borrado
+# 7. VISOR DE REGISTRO Y BORRADO
 col_reg_v, col_del_v = st.columns([0.75, 0.25])
 
 clase_reg = "registro-container caja-activa" if st.session_state.foco == "reg" else "registro-container"
@@ -191,34 +241,7 @@ with col_del_v:
         borrar_ultimo()
         st.rerun()
 
-# 6. INYECCIÓN DE COLORES DIRECTA EN EL TECLADO
-reglas_css = []
-for num in st.session_state.calientes:
-    reglas_css.append(f"""
-        div[data-testid="stColumn"] div.stButton button:has(p:text-is("{num}")),
-        div.stButton button[data-testid="stBaseButton-secondary"]:has(p:text-is("{num}")) {{
-            background-color: #fff3e0 !important;
-            border: 1px solid #ffe0b2 !important;
-            color: #8c4a00 !important;
-            font-weight: 800 !important;
-        }}
-    """)
-
-for num in st.session_state.frios:
-    reglas_css.append(f"""
-        div[data-testid="stColumn"] div.stButton button:has(p:text-is("{num}")),
-        div.stButton button[data-testid="stBaseButton-secondary"]:has(p:text-is("{num}")) {{
-            background-color: #e3f2fd !important;
-            border: 1px solid #bbdefb !important;
-            color: #0d47a1 !important;
-            font-weight: 800 !important;
-        }}
-    """)
-
-if reglas_css:
-    st.markdown(f"<style>{''.join(reglas_css)}</style>", unsafe_allow_html=True)
-
-# 7. Teclado nativo estable
+# 8. TECLADO NATIVO ESTABLE
 if st.button("0", key="btn_0", use_container_width=True):
     procesar_numero(0)
     st.rerun()
