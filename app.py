@@ -2,10 +2,9 @@ import streamlit as st
 
 st.set_page_config(page_title="Agente", layout="centered")
 
-# Estilo ultra compacto para evitar todo scroll en iPhone 12
+# Estilo ultra compacto para evitar scroll en iPhone 12
 st.markdown("""
     <style>
-    /* Ocultar elementos sobrantes de la interfaz de Streamlit */
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
     footer {visibility: hidden;}
@@ -16,7 +15,6 @@ st.markdown("""
         padding-right: 0.5rem !important;
     }
     
-    /* Tarjetas superiores sobrias y compactas */
     .card-discreta {
         background-color: #f9f9f9;
         border: 1px solid #e0e0e0;
@@ -44,18 +42,30 @@ st.markdown("""
         color: #555555;
     }
     
-    /* Visor de registro ultracompacto */
-    .registro-box {
+    /* Contenedor flexible para el visor y el botón de borrado */
+    .registro-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         background-color: #f4f4f5;
         border-radius: 5px;
         padding: 4px 8px;
+        margin-bottom: 6px;
         font-size: 11px;
         color: #333333;
-        margin-bottom: 6px;
         font-family: monospace;
     }
+    .btn-undo {
+        background-color: #e4e4e7;
+        border: 1px solid #d4d4d8;
+        color: #333333;
+        padding: 2px 8px;
+        font-size: 11px;
+        font-weight: bold;
+        border-radius: 4px;
+        text-decoration: none;
+    }
     
-    /* Teclado numérico ajustado a la pantalla de móvil */
     .grid-container {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
@@ -98,9 +108,17 @@ if "historial" not in st.session_state:
 
 # Captura de pulsaciones desde el teclado HTML
 query_params = st.query_params
+
 if "add_num" in query_params:
     num_pulsado = int(query_params["add_num"])
     st.session_state.historial.append(num_pulsado)
+    st.query_params.clear()
+    st.rerun()
+
+# Lógica para borrar el último número
+if "undo" in query_params:
+    if st.session_state.historial:
+        st.session_state.historial.pop()
     st.query_params.clear()
     st.rerun()
 
@@ -123,23 +141,24 @@ with col_b:
         </div>
     """, unsafe_allow_html=True)
 
-# Visor de registro en tiempo real
+# Visor de registro con botón discreto de borrado (⌫)
 if st.session_state.historial:
     ultimos = st.session_state.historial[-20:]
     texto_registro = " - ".join(map(str, ultimos))
     st.markdown(f"""
-        <div class="registro-box">
-            <b>Reg ({len(st.session_state.historial)}):</b> {texto_registro}
+        <div class="registro-container">
+            <div><b>Reg ({len(st.session_state.historial)}):</b> {texto_registro}</div>
+            <a href="?undo=1" target="_self" class="btn-undo">⌫ Borrar</a>
         </div>
     """, unsafe_allow_html=True)
 else:
     st.markdown("""
-        <div class="registro-box" style="color: #999999;">
-            Reg (0): Sin registros
+        <div class="registro-container" style="color: #999999;">
+            <div>Reg (0): Sin registros</div>
         </div>
     """, unsafe_allow_html=True)
 
-# Generación del Teclado Rígido HTML Ultra Compacto
+# Generación del Teclado Rígido HTML
 html_teclado = '<a href="?add_num=0" target="_self" class="btn-zero">0</a><div class="grid-container">'
 
 for n in range(1, 37):
