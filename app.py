@@ -2,10 +2,9 @@ import streamlit as st
 
 st.set_page_config(page_title="Agente", layout="centered")
 
-# Estilo discreto y control de columnas en móvil
+# CSS para forzar el teclado matricial perfecto en iPhone
 st.markdown("""
     <style>
-    /* Estilo tenue para las tarjetas */
     .card-discreta {
         background-color: #f9f9f9;
         border: 1px solid #e0e0e0;
@@ -32,7 +31,6 @@ st.markdown("""
         font-weight: 400;
         color: #555555;
     }
-    /* Estilo para la lista de registro comprobante */
     .registro-box {
         background-color: #f4f4f5;
         border-radius: 6px;
@@ -42,22 +40,29 @@ st.markdown("""
         margin-bottom: 10px;
         font-family: monospace;
     }
-    /* Forzar que las columnas de Streamlit NO se apilen en móvil */
-    [data-testid="column"] {
-        width: 23% !important;
-        flex: 1 1 23% !important;
-        min-width: 23% !important;
+    /* Estructura fija de teclado para móvil */
+    .grid-teclado {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 4px;
+        width: 100%;
+        margin-top: 5px;
     }
-    /* Botones ultrapactos para encajar en la pantalla del iPhone */
+    /* Redefinición estricta de botones de Streamlit */
+    div.element-container:has(button) {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
     div.stButton > button {
         width: 100% !important;
-        padding: 4px 0px !important;
+        height: 38px !important;
+        padding: 0px !important;
         font-size: 14px !important;
-        font-weight: 500 !important;
+        font-weight: 600 !important;
         background-color: #ffffff !important;
         color: #333333 !important;
         border: 1px solid #dcdcdc !important;
-        margin: 0px !important;
+        border-radius: 4px !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -85,7 +90,7 @@ with col_b:
         </div>
     """, unsafe_allow_html=True)
 
-# MUESTRA DE REGISTRO EN TIEMPO REAL
+# Visor de registro en tiempo real
 if st.session_state.historial:
     ultimos = st.session_state.historial[-20:]
     texto_registro = " - ".join(map(str, ultimos))
@@ -105,7 +110,7 @@ else:
 if st.button("0", use_container_width=True):
     st.session_state.historial.append(0)
 
-# Teclado compacto ordenado (1 al 36) en 4 columnas obligatorias
+# Teclado compacto ordenado (1 al 36) en 4 columnas estrictas
 cols = st.columns(4)
 for num in range(1, 37):
     col_idx = (num - 1) % 4
