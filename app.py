@@ -1,6 +1,6 @@
 import streamlit as st
 
-st.set_page_config(page_title="Agente", layout="centered")
+st.set_page_config(page_title="PRUEBA VISTA", layout="centered")
 
 # Estilo discreto y compacto
 st.markdown("""
