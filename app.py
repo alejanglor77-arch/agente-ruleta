@@ -3,7 +3,7 @@ import json
 import os
 from datetime import datetime
 
-st.set_page_config(page_title="Agente Ruleta Express Pro Evolutivo", layout="centered")
+st.set_page_config(page_title="Agente Ruleta Express Pro Inteligente", layout="centered")
 
 # Estilos CSS optimizados para iPhone 12
 st.markdown("""
@@ -204,7 +204,7 @@ def borrar_ultimo():
     elif st.session_state.foco == "reg" and st.session_state.historial:
         st.session_state.historial.pop(0)
 
-# 4. CEREBRO ADAPTATIVO CON AUTODIAGNÓSTICO GUIADO POR LÍNEAS
+# 4. CEREBRO ADAPTATIVO (ACTUALIZADO CON PESO 0.08)
 def obtener_vecinos(num, radio=3):
     idx = RUEDA_OFICIAL.index(num)
     return [RUEDA_OFICIAL[(idx + i) % len(RUEDA_OFICIAL)] for i in range(-radio, radio + 1)]
@@ -228,7 +228,7 @@ def calcular_agente(historial, calientes_panel, frios_panel):
         vecinos_cercanos = obtener_vecinos(num, radio=1)
         
         score = sum(conteo_sesion[v] * 2 for v in vecinos_cercanos)
-        score += sum(conteo_historico_global[v] * 0.08 for v in vecinos_cercanos) # Línea clave del algoritmo
+        score += sum(conteo_historico_global[v] * 0.08 for v in vecinos_cercanos)
         score += sum(3 for v in vecinos_cercanos if v in calientes_panel)
         
         if any(v in ecos_detectados for v in vecinos_cercanos):
@@ -339,22 +339,22 @@ if st.session_state.ver_bitacora:
         st.markdown("<i>Aún no hay sesiones guardadas. Pulsa 💾 al terminar una partida.</i>", unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-# --- SISTEMA DE AUTODIAGNÓSTICO CON GUÍA EXACTA DE LÍNEAS ---
+# --- CONTROL DE ALERTA NEURONAL (CONDICIÓN REAL DE ACTIVACIÓN FUTURA) ---
+# Aquí puedes cambiar el número '999' en el futuro por el umbral real cuando el agente deba levantar la mano de verdad.
 bitacora_check = cargar_bitacora()
-if len(bitacora_check) >= 3:
+if len(bitacora_check) >= 999:  # Puesto alto a propósito para que permanezca en silencio hasta que haya una alerta real
     st.markdown("""
         <div class="alerta-ia">
             <b>🧠 ALERTA NEURONAL DEL AGENTE (DIAGNÓSTICO):</b><br>
-            Analizadas las sesiones de la bitácora, propongo ajustar el peso de memoria histórica.<br>
+            Analizadas las sesiones de la bitácora, propongo ajustar el parámetro del algoritmo.<br>
             👉 <b>Instrucción:</b> Ve a la función <code>calcular_agente()</code> (alrededor de la <b>línea 145</b>).
         </div>
     """, unsafe_allow_html=True)
-    with st.expander("🛠️ Ver Instrucción de Borrado y Sustitución"):
+    with st.expander("🛠️ Ver Instrucciones de Borrado y Sustitución"):
         st.markdown("""
         * **Paso 1:** Busca esta línea exacta en tu código:
           `score += sum(conteo_historico_global[v] * 0.05 for v in vecinos_cercanos)`
-        * **Paso 2:** Bórrala y cámbiala por esta nueva:
-          `score += sum(conteo_historico_global[v] * 0.08 for v in vecinos_cercanos)`
+        * **Paso 2:** Bórrala y cámbiala por la nueva propuesta.
         """)
 
 # --- GRUPOS A Y B ---
