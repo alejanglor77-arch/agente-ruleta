@@ -3,7 +3,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Agente", layout="centered")
 
-# Estilo ultra compacto para filas y tonos tenues
+# Estilo para FILAS fluidas, colores tenues y ajuste perfecto en iPhone
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -78,40 +78,110 @@ st.markdown("""
         margin-right: 6px;
     }
 
-    /* Regla rígida para filas continuas y compactas */
-    div[data-testid="stHorizontalBlock"] {
-        display: flex !important;
-        flex-direction: row !important;
-        flex-wrap: nowrap !important;
-        gap: 3px !important;
+    /* Teclado en FILAS fluidas (manteniendo la estructura exacta que funcionaba) */
+    .teclado-filas {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        justify-content: center;
+        width: 100%;
+        margin-top: 4px;
     }
-    div[data-testid="column"] {
-        flex: 1 1 0px !important;
-        min-width: 0px !important;
-        padding: 0px !important;
+    .btn-num-fila {
+        flex: 1 0 18%;
+        max-width: 23%;
+        height: 32px;
+        background-color: #ffffff;
+        border: 1px solid #dcdcdc;
+        border-radius: 5px;
+        color: #333333;
+        font-weight: 600;
+        font-size: 13px;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        cursor: pointer;
+        user-select: none;
+    }
+    .btn-zero-fila {
+        flex: 1 0 100%;
+        max-width: 100%;
+        height: 32px;
+        background-color: #ffffff;
+        border: 1px solid #dcdcdc;
+        border-radius: 5px;
+        color: #18181b;
+        font-weight: 700;
+        font-size: 14px;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 2px;
+        box-sizing: border-box;
+        cursor: pointer;
+        user-select: none;
     }
 
-    /* Botones principales para el teclado numérico */
-    div.stButton > button {
-        width: 100% !important;
-        height: 32px !important;
-        padding: 0px !important;
-        font-size: 13px !important;
-        font-weight: 600 !important;
-        background-color: #ffffff !important;
-        color: #333333 !important;
-        border: 1px solid #dcdcdc !important;
-        border-radius: 5px !important;
-        margin: 0px !important;
+    /* Resaltados de color tenue */
+    .btn-caliente {
+        background-color: #fff3e0 !important;
+        border: 1px solid #ffe0b2 !important;
+        color: #8c4a00 !important;
+    }
+    .btn-frio {
+        background-color: #e3f2fd !important;
+        border: 1px solid #bbdefb !important;
+        color: #0d47a1 !important;
+    }
+    
+    .btn-del-style {
+        background: #e4e4e7;
+        color: #333;
+        font-weight: bold;
+        border: 1px solid #d4d4d8;
+        padding: 2px 8px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 11px;
     }
     </style>
+
+    <script>
+    function pressNum(val) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('add_val', val);
+        window.location.href = url.toString();
+    }
+    function pressDel() {
+        const url = new URL(window.location.href);
+        url.searchParams.set('del_act', '1');
+        window.location.href = url.toString();
+    }
+    </script>
 """, unsafe_allow_html=True)
 
-# Estado persistente del historial acumulativo
+# Estado interno persistente para acumular la secuencia completa
 if "historial" not in st.session_state:
     st.session_state.historial = []
 
-# Función para extraer números de calientes y fríos
+# Procesar capturas de pulsación manteniendo el historial intacto
+query_params = st.query_params
+
+if "add_val" in query_params:
+    st.session_state.historial.append(int(query_params["add_val"]))
+    st.query_params.clear()
+    st.rerun()
+
+if "del_act" in query_params:
+    if len(st.session_state.historial) > 0:
+        st.session_state.historial.pop()
+    st.query_params.clear()
+    st.rerun()
+
+# Extraer calientes y fríos para colorear teclas
 def parse_numeros(texto):
     if not texto:
         return set()
@@ -127,21 +197,6 @@ with col_fri:
 
 set_calientes = parse_numeros(in_calientes)
 set_frios = parse_numeros(in_frios)
-
-# Aplicar colores tenues de forma limpia mediante CSS inyectado
-css_colores = "<style>"
-if 0 in set_calientes:
-    css_colores += "div.stButton > button[key='btn_0'] { background-color: #fff3e0 !important; border: 1px solid #ffe0b2 !important; color: #8c4a00 !important; }"
-elif 0 in set_frios:
-    css_colores += "div.stButton > button[key='btn_0'] { background-color: #e3f2fd !important; border: 1px solid #bbdefb !important; color: #0d47a1 !important; }"
-
-for num in range(1, 37):
-    if num in set_calientes:
-        css_colores += f"div.stButton > button[key='btn_{num}'] {{ background-color: #fff3e0 !important; border: 1px solid #ffe0b2 !important; color: #8c4a00 !important; }}"
-    elif num in set_frios:
-        css_colores += f"div.stButton > button[key='btn_{num}'] {{ background-color: #e3f2fd !important; border: 1px solid #bbdefb !important; color: #0d47a1 !important; }}"
-css_colores += "</style>"
-st.markdown(css_colores, unsafe_allow_html=True)
 
 # 2. Recomendación principal (Grupo A y Grupo B)
 col_a, col_b = st.columns(2)
@@ -161,34 +216,44 @@ with col_b:
         </div>
     """, unsafe_allow_html=True)
 
-# 3. Visor del historial acumulado y botón de borrado
-col_reg, col_del = st.columns([0.75, 0.25])
+# 3. Visor de registro continuo + Botón ⌫ Borrar
+if st.session_state.historial:
+    texto_registro = " - ".join(map(str, st.session_state.historial))
+    st.markdown(f"""
+        <div class="registro-container">
+            <div class="registro-texto"><b>Reg ({len(st.session_state.historial)}):</b> {texto_registro}</div>
+            <div class="btn-del-style" onclick="pressDel()">⌫ Borrar</div>
+        </div>
+    """, unsafe_allow_html=True)
+else:
+    st.markdown("""
+        <div class="registro-container" style="color: #999999;">
+            <div class="registro-texto">Reg (0): Sin registros</div>
+        </div>
+    """, unsafe_allow_html=True)
 
-with col_reg:
-    if st.session_state.historial:
-        texto_registro = " - ".join(map(str, st.session_state.historial))
-        st.markdown(f'<div class="registro-container"><div class="registro-texto"><b>Reg ({len(st.session_state.historial)}):</b> {texto_registro}</div></div>', unsafe_allow_html=True)
-    else:
-        st.markdown('<div class="registro-container" style="color: #999999;"><div class="registro-texto">Reg (0): Sin registros</div></div>', unsafe_allow_html=True)
+# 4. Teclado en FILAS adaptables con sombreado tenue y registro acumulativo
+html_teclado = '<div class="teclado-filas">'
 
-with col_del:
-    if st.button("⌫ Borrar", key="btn_del"):
-        if len(st.session_state.historial) > 0:
-            st.session_state.historial.pop()
-            st.rerun()
+# Botón 0
+clase_zero = "btn-zero-fila"
+if 0 in set_calientes:
+    clase_zero += " btn-caliente"
+elif 0 in set_frios:
+    clase_zero += " btn-frio"
 
-# 4. Botón 0 arriba
-if st.button("0", key="btn_0", use_container_width=True):
-    st.session_state.historial.append(0)
-    st.rerun()
+html_teclado += f'<div onclick="pressNum(0)" class="{clase_zero}">0</div>'
 
-# 5. Teclado distribuido por filas compactas de 4 columnas
-for fila in range(0, 9):
-    cols = st.columns(4)
-    for col_idx in range(4):
-        num = fila * 4 + col_idx + 1
-        if num <= 36:
-            with cols[col_idx]:
-                if st.button(str(num), key=f"btn_{num}"):
-                    st.session_state.historial.append(num)
-                    st.rerun()
+# Botones 1 al 36 en filas
+for n in range(1, 37):
+    clase_btn = "btn-num-fila"
+    if n in set_calientes:
+        clase_btn += " btn-caliente"
+    elif n in set_frios:
+        clase_btn += " btn-frio"
+    
+    html_teclado += f'<div onclick="pressNum({n})" class="{clase_btn}">{n}</div>'
+
+html_teclado += '</div>'
+
+st.markdown(html_teclado, unsafe_allow_html=True)
