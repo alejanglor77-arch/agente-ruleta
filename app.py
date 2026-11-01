@@ -1,8 +1,9 @@
 import streamlit as st
 import json
 import os
+from datetime import datetime
 
-st.set_page_config(page_title="Agente Ruleta Express Pro", layout="centered")
+st.set_page_config(page_title="Agente Ruleta Express Pro Bitácora", layout="centered")
 
 # Estilos CSS optimizados para iPhone 12
 st.markdown("""
@@ -118,28 +119,40 @@ RUEDA_OFICIAL = [
     5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26
 ]
 
-# 2. SISTEMA DE MEMORIA ACUMULATIVA (APRENDIZAJE GRATIS EN ARCHIVO LOCAL)
-ARCH_MEMORIA = "historial_aprendido.json"
+# 2. SISTEMA DE BITÁCORA Y MEMORIA CON FECHAS
+ARCH_BITACORA = "libro_bitacora_ia.json"
 
-def cargar_memoria_historica():
-    if os.path.exists(ARCH_MEMORIA):
+def cargar_bitacora():
+    if os.path.exists(ARCH_BITACORA):
         try:
-            with open(ARCH_MEMORIA, "r") as f:
+            with open(ARCH_BITACORA, "r", encoding="utf-8") as f:
                 return json.load(f)
         except:
             return []
     return []
 
-def guardar_en_memoria(sesion_historial):
+def guardar_sesion_bitacora(sesion_historial):
     if not sesion_historial:
-        return
-    historico = cargar_memoria_historica()
-    historico.append(sesion_historial)
-    # Guardamos las últimas 50 sesiones para que el cerebro crezca sin sobrecargar
-    if len(historico) > 50:
-        historico = historico[-50:]
-    with open(ARCH_MEMORIA, "w") as f:
-        json.dump(historico, f)
+        return False
+    
+    bitacora = cargar_bitacora()
+    fecha_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    nueva_entrada = {
+        "fecha": fecha_actual,
+        "total_tiradas": len(sesion_historial),
+        "secuencia": sesion_historial
+    }
+    
+    bitacora.append(nueva_entrada)
+    
+    # Mantener un límite razonable de sesiones guardadas
+    if len(bitacora) > 100:
+        bitacora = bitacora[-100:]
+        
+    with open(ARCH_BITACORA, "w", encoding="utf-8") as f:
+        json.dump(bitacora, f, ensure_ascii=False, indent=4)
+    return True
 
 # 3. MEMORIA DE SESIÓN ACTUAL
 if "historial" not in st.session_state:
@@ -169,8 +182,8 @@ def borrar_ultimo():
     elif st.session_state.foco == "reg" and st.session_state.historial:
         st.session_state.historial.pop(0)
 
-# 4. CEREBRO ADAPTATIVO CON APRENDIZAJE HISTÓRICO
-def obtener_vecinos(num, radio=3): # Radio ampliado para mayor solidez física
+# 4. CEREBRO ADAPTATIVO CON APRENDIZAJE DE BITÁCORA
+def obtener_vecinos(num, radio=3):
     idx = RUEDA_OFICIAL.index(num)
     return [RUEDA_OFICIAL[(idx + i) % len(RUEDA_OFICIAL)] for i in range(-radio, radio + 1)]
 
@@ -178,37 +191,34 @@ def calcular_agente(historial, calientes_panel, frios_panel):
     if len(historial) < 2 and not calientes_panel:
         return None, None
 
-    # Cargamos el aprendizaje histórico de sesiones pasadas
-    memoria_pasada = cargar_memoria_historica()
+    # Cargar bitácora histórica para que la IA aprenda del pasado
+    bitacora_pasada = cargar_bitacora()
     conteo_historico_global = {n: 0 for n in range(37)}
-    for sesion in memoria_pasada:
-        for num in sesion:
+    for sesion in bitacora_pasada:
+        for num in sesion.get("secuencia", []):
             conteo_historico_global[num] += 1
 
-    # Ventana de sesión actual
     ventana = historial[:30] if historial else []
     conteo_sesion = {n: ventana.count(n) for n in range(37)}
-    
     ecos_detectados = [n for n, count in conteo_sesion.items() if count >= 2]
 
     puntuaciones = {}
     for num in RUEDA_OFICIAL:
         vecinos_cercanos = obtener_vecinos(num, radio=1)
         
-        # Ponderación basada en frecuencia actual + peso acumulado de sesiones pasadas (Aprendizaje)
+        # Ponderación con frecuencia actual + aprendizaje histórico acumulado
         score = sum(conteo_sesion[v] * 2 for v in vecinos_cercanos)
-        score += sum(conteo_historico_global[v] * 0.1 for v in vecinos_cercanos) # Feedback neuronal histórico
+        score += sum(conteo_historico_global[v] * 0.05 for v in vecinos_cercanos)
         
         score += sum(3 for v in vecinos_cercanos if v in calientes_panel)
         
         if any(v in ecos_detectados for v in vecinos_cercanos):
-            score += 6 # Alerta de eco reforzada
+            score += 6
 
-        # Adaptabilidad de fríos
         for v in vecinos_cercanos:
             if v in frios_panel:
                 if conteo_sesion[v] > 0:
-                    score -= 1 # Ciclo cambiado, flexibilizamos
+                    score -= 1
                 else:
                     score -= 4
 
@@ -224,10 +234,8 @@ def calcular_agente(historial, calientes_panel, frios_panel):
         if len(apuesta_fuerte) < 5 or (len(apuesta_fuerte) < 8 and puntuaciones[n] >= max_score * 0.6):
             apuesta_fuerte.append(n)
 
-    # Bloque continuo ordenado en la rueda (Cero huecos)
     apuesta_fuerte_ordenada_rueda = [n for n in RUEDA_OFICIAL if n in apuesta_fuerte]
 
-    # COBERTURA SÓLIDA GRUPO B (Radio de 3 posiciones para que no sean solo 2 números)
     ultimo_num = historial[0] if historial else (calientes_panel[0] if calientes_panel else 0)
     cobertura_inercia = [n for n in obtener_vecinos(ultimo_num, radio=3) if n not in apuesta_fuerte]
 
@@ -253,12 +261,12 @@ clase_fri = "caja-interactiva caja-activa" if st.session_state.foco == "fri" els
 txt_fri = ", ".join(map(str, st.session_state.frios)) if st.session_state.frios else "Vacío"
 st.markdown(f'<div class="{clase_fri}"><div class="caja-label">Fríos</div><b>{txt_fri}</b></div>', unsafe_allow_html=True)
 
-# 3. BLOQUE REGISTRO Y BOTÓN DE GUARDAR SESIÓN (APRENDIZAJE)
+# 3. BLOQUE REGISTRO Y CONTROLES DE BITÁCORA (GUARDAR / DESCARGAR)
 if st.button("🎲 Registro [✓]" if st.session_state.foco == "reg" else "🎲 Registro", key="btn_foco_reg", use_container_width=True):
     st.session_state.foco = "reg"
     st.rerun()
 
-col_reg_v, col_del_v = st.columns([0.6, 0.4])
+col_reg_v, col_del_v = st.columns([0.55, 0.45])
 clase_reg = "registro-container caja-activa" if st.session_state.foco == "reg" else "registro-container"
 
 with col_reg_v:
@@ -269,17 +277,30 @@ with col_reg_v:
         st.markdown(f'<div class="{clase_reg}" style="color: #999999;"><div class="registro-texto">Reg (0): Sin registros</div></div>', unsafe_allow_html=True)
 
 with col_del_v:
-    col_sub_del1, col_sub_del2 = st.columns(2)
-    with col_sub_del1:
+    col_sub1, col_sub2, col_sub3 = st.columns(3)
+    with col_sub1:
         if st.button("⌫", key="btn_del_main", help="Borrar último"):
             borrar_ultimo()
             st.rerun()
-    with col_sub_del2:
-        if st.button("💾", key="btn_save_session", help="Guardar sesión para que la IA aprenda"):
+    with col_sub2:
+        if st.button("💾", key="btn_save_bitacora", help="Guardar sesión en el Libro de Bitácora"):
             if st.session_state.historial:
-                guardar_en_memoria(st.session_state.historial)
-                st.success("¡Aprendido!")
-                st.rerun()
+                if guardar_sesion_bitacora(st.session_state.historial):
+                    st.success("¡Guardado!")
+                    st.rerun()
+    with col_sub3:
+        bitacora_actual = cargar_bitacora()
+        if bitacora_actual:
+            datos_json = json.dumps(bitacora_actual, ensure_ascii=False, indent=4)
+            st.download_button(
+                label="📥",
+                data=datos_json,
+                file_name=f"libro_bitacora_ia_{datetime.now().strftime('%Y%m%d')}.json",
+                mime="application/json",
+                help="Descargar Libro de Bitácora completo"
+            )
+        else:
+            st.button("📥", disabled=True, help="Sin datos en bitácora")
 
 # --- GRUPOS A Y B ---
 fuerte, cobertura = calcular_agente(st.session_state.historial, st.session_state.calientes, st.session_state.frios)
