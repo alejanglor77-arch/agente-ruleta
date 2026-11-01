@@ -2,7 +2,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Agente Ruleta Express", layout="centered")
 
-# Estilos CSS limpios y compactos (cabecera intacta + botones verticales pequeños)
+# Estilos CSS optimizados para una visualización limpia y vertical
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -20,8 +20,8 @@ st.markdown("""
         background-color: #f9f9f9;
         border: 1px solid #e0e0e0;
         border-radius: 6px;
-        padding: 4px;
-        text-align: center;
+        padding: 4px 6px;
+        text-align: left;
         color: #4a4a4a;
         margin-bottom: 3px;
     }
@@ -29,7 +29,7 @@ st.markdown("""
         font-size: 9px;
         text-transform: uppercase;
         color: #888888;
-        margin-bottom: 1px;
+        font-weight: bold;
     }
     .card-valores-fuerte {
         font-size: 13px;
@@ -46,7 +46,7 @@ st.markdown("""
         background-color: #ffffff;
         border: 1px solid #d4d4d8;
         border-radius: 5px;
-        padding: 3px 5px;
+        padding: 4px 6px;
         font-size: 11px;
         color: #18181b;
         font-family: monospace;
@@ -62,7 +62,6 @@ st.markdown("""
         text-transform: uppercase;
         color: #71717a;
         font-weight: bold;
-        margin-bottom: 1px;
     }
 
     .registro-container {
@@ -72,7 +71,7 @@ st.markdown("""
         background-color: #ffffff;
         border: 1px solid #d4d4d8;
         border-radius: 5px;
-        padding: 3px 6px;
+        padding: 4px 8px;
         margin-bottom: 4px;
         font-size: 11px;
         color: #18181b;
@@ -96,7 +95,7 @@ st.markdown("""
         padding: 0px !important;
     }
 
-    /* BOTONES NUMÉRICOS PEQUEÑOS Y DISCRETOS A LA IZQUIERDA */
+    /* BOTONES NUMÉRICOS PEQUEÑOS A LA IZQUIERDA */
     div.stButton > button {
         width: 60px !important;
         height: 28px !important;
@@ -199,35 +198,25 @@ with col_sel_reg:
         st.session_state.foco = "reg"
         st.rerun()
 
-# 5. VISORES INTERACTIVOS DE CALIENTES Y FRÍOS
-col_cal_v, col_fri_v = st.columns(2)
-
+# 5. VISORES VERTICALES (CALIENTES ARRIBA, FRÍOS ABAJO)
 clase_cal = "caja-interactiva caja-activa" if st.session_state.foco == "cal" else "caja-interactiva"
+txt_cal = ", ".join(map(str, st.session_state.calientes)) if st.session_state.calientes else "Vacío"
+st.markdown(f'<div class="{clase_cal}"><div class="caja-label">Calientes</div><b>{txt_cal}</b></div>', unsafe_allow_html=True)
+
 clase_fri = "caja-interactiva caja-activa" if st.session_state.foco == "fri" else "caja-interactiva"
+txt_fri = ", ".join(map(str, st.session_state.frios)) if st.session_state.frios else "Vacío"
+st.markdown(f'<div class="{clase_fri}"><div class="caja-label">Fríos</div><b>{txt_fri}</b></div>', unsafe_allow_html=True)
 
-with col_cal_v:
-    txt_cal = ", ".join(map(str, st.session_state.calientes)) if st.session_state.calientes else "Vacío"
-    st.markdown(f'<div class="{clase_cal}"><div class="caja-label">Calientes</div><b>{txt_cal}</b></div>', unsafe_allow_html=True)
-
-with col_fri_v:
-    txt_fri = ", ".join(map(str, st.session_state.frios)) if st.session_state.frios else "Vacío"
-    st.markdown(f'<div class="{clase_fri}"><div class="caja-label">Fríos</div><b>{txt_fri}</b></div>', unsafe_allow_html=True)
-
-# 6. GRUPO A Y GRUPO B
+# 6. GRUPOS A Y B VERTICALES (GRUPO A ARRIBA, GRUPO B ABAJO)
 fuerte, cobertura = calcular_agente(st.session_state.historial, st.session_state.calientes, st.session_state.frios)
-
 txt_a = ", ".join(map(str, fuerte)) if fuerte else "—"
 txt_b = ", ".join(map(str, cobertura)) if cobertura else "—"
 
-col_a, col_b = st.columns(2)
-with col_a:
-    st.markdown(f'<div class="card-discreta"><div class="card-titulo">Grupo A (Ataque 70%)</div><div class="card-valores-fuerte">{txt_a}</div></div>', unsafe_allow_html=True)
-with col_b:
-    st.markdown(f'<div class="card-discreta"><div class="card-titulo">Grupo B (Cobertura 30%)</div><div class="card-valores-suave">{txt_b}</div></div>', unsafe_allow_html=True)
+st.markdown(f'<div class="card-discreta"><div class="card-titulo">Grupo A (Ataque 70%)</div><div class="card-valores-fuerte">{txt_a}</div></div>', unsafe_allow_html=True)
+st.markdown(f'<div class="card-discreta"><div class="card-titulo">Grupo B (Cobertura 30%)</div><div class="card-valores-suave">{txt_b}</div></div>', unsafe_allow_html=True)
 
 # 7. REGISTRO Y BORRADO
 col_reg_v, col_del_v = st.columns([0.75, 0.25])
-
 clase_reg = "registro-container caja-activa" if st.session_state.foco == "reg" else "registro-container"
 
 with col_reg_v:
@@ -242,7 +231,7 @@ with col_del_v:
         borrar_ultimo()
         st.rerun()
 
-# 8. BOTONES SECUENCIALES PEQUEÑOS Y ALINEADOS A LA IZQUIERDA
+# 8. BOTONES SECUENCIALES (VERTICALES A LA IZQUIERDA)
 if st.button("0", key="btn_0"):
     procesar_numero(0)
     st.rerun()
