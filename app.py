@@ -2,7 +2,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Agente", layout="centered")
 
-# CSS para filas fluidas, cero scroll lateral en iPhone y cajas táctiles
+# Estilo para filas fluidas, cero scroll lateral en iPhone y cajas táctiles
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -43,6 +43,7 @@ st.markdown("""
         color: #555555;
     }
 
+    /* Indicadores visuales de foco */
     .caja-interactiva {
         background-color: #ffffff;
         border: 1px solid #d4d4d8;
@@ -53,11 +54,10 @@ st.markdown("""
         font-family: monospace;
         min-height: 28px;
         margin-bottom: 4px;
-        cursor: pointer;
     }
     .caja-activa {
         border: 2px solid #18181b !important;
-        background-color: #fafafa;
+        background-color: #f4f4f5 !important;
     }
     .caja-label {
         font-size: 9px;
@@ -80,7 +80,6 @@ st.markdown("""
         color: #18181b;
         font-family: monospace;
         min-height: 28px;
-        cursor: pointer;
     }
     .registro-texto {
         overflow-x: auto;
@@ -89,76 +88,44 @@ st.markdown("""
     }
 
     /* Teclado en FILAS fluidas adaptables al iPhone */
-    .teclado-filas {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 4px;
-        justify-content: center;
-        width: 100%;
-        margin-top: 4px;
+    div[data-testid="stHorizontalBlock"] {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        gap: 3px !important;
     }
-    .btn-num-fila {
-        flex: 1 0 18%;
-        max-width: 23%;
-        height: 32px;
-        background-color: #ffffff;
-        border: 1px solid #dcdcdc;
-        border-radius: 5px;
-        color: #333333;
-        font-weight: 600;
-        font-size: 13px;
-        text-align: center;
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-sizing: border-box;
-    }
-    .btn-zero-fila {
-        flex: 1 0 100%;
-        max-width: 100%;
-        height: 32px;
-        background-color: #ffffff;
-        border: 1px solid #dcdcdc;
-        border-radius: 5px;
-        color: #18181b;
-        font-weight: 700;
-        font-size: 14px;
-        text-align: center;
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 2px;
-        box-sizing: border-box;
+    div[data-testid="column"] {
+        flex: 1 1 0px !important;
+        min-width: 0px !important;
+        padding: 0px !important;
     }
 
-    /* Resaltados de color tenue */
-    .btn-caliente {
-        background-color: #fff3e0 !important;
-        border: 1px solid #ffe0b2 !important;
-        color: #8c4a00 !important;
+    /* Estilo de botones nativos compactos */
+    div.stButton > button {
+        width: 100% !important;
+        height: 32px !important;
+        padding: 0px !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        background-color: #ffffff !important;
+        color: #333333 !important;
+        border: 1px solid #dcdcdc !important;
+        border-radius: 5px !important;
+        margin: 0px !important;
     }
-    .btn-frio {
-        background-color: #e3f2fd !important;
-        border: 1px solid #bbdefb !important;
-        color: #0d47a1 !important;
-    }
-    
-    .btn-del-style {
-        background: #e4e4e7;
-        color: #333;
-        font-weight: bold;
-        border: 1px solid #d4d4d8;
-        padding: 2px 6px;
-        border-radius: 4px;
-        text-decoration: none;
-        font-size: 11px;
+
+    /* Botones de selección de cajetín */
+    .btn-foco > button {
+        height: 26px !important;
+        font-size: 10px !important;
+        font-weight: bold !important;
+        background-color: #f4f4f5 !important;
+        border: 1px solid #d4d4d8 !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# Estado persistente en memoria
+# 1. Estado persistente del servidor
 if "historial" not in st.session_state:
     st.session_state.historial = []
 if "calientes" not in st.session_state:
@@ -166,32 +133,20 @@ if "calientes" not in st.session_state:
 if "frios" not in st.session_state:
     st.session_state.frios = []
 if "foco" not in st.session_state:
-    st.session_state.foco = "reg"  # 'cal', 'fri', o 'reg'
+    st.session_state.foco = "reg"  # 'cal', 'fri', 'reg'
 
-# Procesamiento de eventos mediante parámetros URL
-query_params = st.query_params
-
-if "set_foco" in query_params:
-    st.session_state.foco = query_params["set_foco"]
-    st.query_params.clear()
-    st.rerun()
-
-if "press" in query_params:
-    num_pulsado = int(query_params["press"])
-    
+# Funciones de procesamiento
+def procesar_numero(num):
     if st.session_state.foco == "cal":
-        if num_pulsado not in st.session_state.calientes and len(st.session_state.calientes) < 5:
-            st.session_state.calientes.append(num_pulsado)
+        if num not in st.session_state.calientes and len(st.session_state.calientes) < 5:
+            st.session_state.calientes.append(num)
     elif st.session_state.foco == "fri":
-        if num_pulsado not in st.session_state.frios and len(st.session_state.frios) < 5:
-            st.session_state.frios.append(num_pulsado)
+        if num not in st.session_state.frios and len(st.session_state.frios) < 5:
+            st.session_state.frios.append(num)
     else:  # 'reg'
-        st.session_state.historial.append(num_pulsado)
-        
-    st.query_params.clear()
-    st.rerun()
+        st.session_state.historial.append(num)
 
-if "clear_act" in query_params:
+def borrar_ultimo():
     if st.session_state.foco == "cal":
         if st.session_state.calientes:
             st.session_state.calientes.pop()
@@ -201,11 +156,29 @@ if "clear_act" in query_params:
     else:
         if st.session_state.historial:
             st.session_state.historial.pop()
-            
-    st.query_params.clear()
-    st.rerun()
 
-# 1. Cajetines de Calientes y Fríos (Seleccionables al tocar sobre ellos)
+# 2. Selección de cajetín mediante botones nativos (Sin perder el foco)
+col_sel_cal, col_sel_fri, col_sel_reg = st.columns(3)
+
+with col_sel_cal:
+    lbl_cal = "🔥 Calientes [✓]" if st.session_state.foco == "cal" else "🔥 Calientes"
+    if st.button(lbl_cal, key="btn_foco_cal"):
+        st.session_state.foco = "cal"
+        st.rerun()
+
+with col_sel_fri:
+    lbl_fri = "❄️ Fríos [✓]" if st.session_state.foco == "fri" else "❄️ Fríos"
+    if st.button(lbl_fri, key="btn_foco_fri"):
+        st.session_state.foco = "fri"
+        st.rerun()
+
+with col_sel_reg:
+    lbl_reg = "🎲 Registro [✓]" if st.session_state.foco == "reg" else "🎲 Registro"
+    if st.button(lbl_reg, key="btn_foco_reg"):
+        st.session_state.foco = "reg"
+        st.rerun()
+
+# 3. Visores interactivos
 col_cal_v, col_fri_v = st.columns(2)
 
 clase_cal = "caja-interactiva caja-activa" if st.session_state.foco == "cal" else "caja-interactiva"
@@ -213,89 +186,62 @@ clase_fri = "caja-interactiva caja-activa" if st.session_state.foco == "fri" els
 
 with col_cal_v:
     txt_cal = ", ".join(map(str, st.session_state.calientes)) if st.session_state.calientes else "Vacío"
-    st.markdown(f'''
-        <a href="?set_foco=cal" target="_self" style="text-decoration:none;">
-            <div class="{clase_cal}">
-                <div class="caja-label">Calientes (opcional)</div>
-                <b>{txt_cal}</b>
-            </div>
-        </a>
-    ''', unsafe_allow_html=True)
+    st.markdown(f'<div class="{clase_cal}"><div class="caja-label">Calientes (máx 5)</div><b>{txt_cal}</b></div>', unsafe_allow_html=True)
 
 with col_fri_v:
     txt_fri = ", ".join(map(str, st.session_state.frios)) if st.session_state.frios else "Vacío"
-    st.markdown(f'''
-        <a href="?set_foco=fri" target="_self" style="text-decoration:none;">
-            <div class="{clase_fri}">
-                <div class="caja-label">Fríos (opcional)</div>
-                <b>{txt_fri}</b>
-            </div>
-        </a>
-    ''', unsafe_allow_html=True)
+    st.markdown(f'<div class="{clase_fri}"><div class="caja-label">Fríos (máx 5)</div><b>{txt_fri}</b></div>', unsafe_allow_html=True)
 
-# 2. Recomendaciones de Grupo A y Grupo B
+# Tarjetas del Grupo A y B
 col_a, col_b = st.columns(2)
 with col_a:
-    st.markdown("""
-        <div class="card-discreta">
-            <div class="card-titulo">Grupo A</div>
-            <div class="card-valores-fuerte">3, 20, 35</div>
-        </div>
-    """, unsafe_allow_html=True)
-
+    st.markdown('<div class="card-discreta"><div class="card-titulo">Grupo A</div><div class="card-valores-fuerte">3, 20, 35</div></div>', unsafe_allow_html=True)
 with col_b:
-    st.markdown("""
-        <div class="card-discreta">
-            <div class="card-titulo">Grupo B</div>
-            <div class="card-valores-suave">9, 22, 31</div>
-        </div>
-    """, unsafe_allow_html=True)
+    st.markdown('<div class="card-discreta"><div class="card-titulo">Grupo B</div><div class="card-valores-suave">9, 22, 31</div></div>', unsafe_allow_html=True)
 
-# 3. Visor de Registro continuo (Seleccionable al tocar sobre él)
+# Visor de Registro y Borrado
+col_reg_v, col_del_v = st.columns([0.75, 0.25])
+
 clase_reg = "registro-container caja-activa" if st.session_state.foco == "reg" else "registro-container"
 
-if st.session_state.historial:
-    texto_registro = " - ".join(map(str, st.session_state.historial))
-    st.markdown(f'''
-        <div class="{clase_reg}">
-            <a href="?set_foco=reg" target="_self" style="text-decoration:none; color:inherit; flex-grow:1;">
-                <div class="registro-texto"><b>Reg ({len(st.session_state.historial)}):</b> {texto_registro}</div>
-            </a>
-            <a href="?clear_act=1" target="_self" class="btn-del-style">⌫ Borrar</a>
-        </div>
-    ''', unsafe_allow_html=True)
-else:
-    st.markdown(f'''
-        <div class="{clase_reg}">
-            <a href="?set_foco=reg" target="_self" style="text-decoration:none; color:#999999; flex-grow:1;">
-                <div class="registro-texto">Reg (0): Sin registros</div>
-            </a>
-            <a href="?clear_act=1" target="_self" class="btn-del-style">⌫ Borrar</a>
-        </div>
-    ''', unsafe_allow_html=True)
+with col_reg_v:
+    if st.session_state.historial:
+        texto_registro = " - ".join(map(str, st.session_state.historial))
+        st.markdown(f'<div class="{clase_reg}"><div class="registro-texto"><b>Reg ({len(st.session_state.historial)}):</b> {texto_registro}</div></div>', unsafe_allow_html=True)
+    else:
+        st.markdown(f'<div class="{clase_reg}" style="color: #999999;"><div class="registro-texto">Reg (0): Sin registros</div></div>', unsafe_allow_html=True)
 
-# 4. Teclado en FILAS fluidas adaptables con resaltado tenue de calientes y fríos
-html_teclado = '<div class="teclado-filas">'
+with col_del_v:
+    if st.button("⌫ Borrar", key="btn_del_main"):
+        borrar_ultimo()
+        st.rerun()
 
-# Botón 0
-clase_zero = "btn-zero-fila"
+# Dynamic Styling Script para colorear botones de calientes y fríos
+css_colores = "<style>"
 if 0 in st.session_state.calientes:
-    clase_zero += " btn-caliente"
+    css_colores += "div.stButton > button[key='btn_0'] { background-color: #fff3e0 !important; border: 1px solid #ffe0b2 !important; color: #8c4a00 !important; }"
 elif 0 in st.session_state.frios:
-    clase_zero += " btn-frio"
+    css_colores += "div.stButton > button[key='btn_0'] { background-color: #e3f2fd !important; border: 1px solid #bbdefb !important; color: #0d47a1 !important; }"
 
-html_teclado += f'<a href="?press=0" target="_self" class="{clase_zero}">0</a>'
+for num in range(1, 37):
+    if num in st.session_state.calientes:
+        css_colores += f"div.stButton > button[key='btn_{num}'] {{ background-color: #fff3e0 !important; border: 1px solid #ffe0b2 !important; color: #8c4a00 !important; }}"
+    elif num in st.session_state.frios:
+        css_colores += f"div.stButton > button[key='btn_{num}'] {{ background-color: #e3f2fd !important; border: 1px solid #bbdefb !important; color: #0d47a1 !important; }}"
+css_colores += "</style>"
+st.markdown(css_colores, unsafe_allow_html=True)
 
-# Botones 1 al 36 en filas
-for n in range(1, 37):
-    clase_btn = "btn-num-fila"
-    if n in st.session_state.calientes:
-        clase_btn += " btn-caliente"
-    elif n in st.session_state.frios:
-        clase_btn += " btn-frio"
-    
-    html_teclado += f'<a href="?press={n}" target="_self" class="{clase_btn}">{n}</a>'
+# 4. Teclado funcional
+if st.button("0", key="btn_0", use_container_width=True):
+    procesar_numero(0)
+    st.rerun()
 
-html_teclado += '</div>'
-
-st.markdown(html_teclado, unsafe_allow_html=True)
+for fila in range(0, 9):
+    cols = st.columns(4)
+    for col_idx in range(4):
+        num = fila * 4 + col_idx + 1
+        if num <= 36:
+            with cols[col_idx]:
+                if st.button(str(num), key=f"btn_{num}"):
+                    procesar_numero(num)
+                    st.rerun()
