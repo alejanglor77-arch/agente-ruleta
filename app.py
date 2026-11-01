@@ -42,18 +42,25 @@ st.markdown("""
         color: #555555;
     }
     
-    /* Visor de registro con boton de borrado integrado */
+    /* Visor de registro tipo cinta de calculadora */
     .registro-container {
         display: flex;
         justify-content: space-between;
         align-items: center;
         background-color: #f4f4f5;
+        border: 1px solid #e4e4e7;
         border-radius: 5px;
-        padding: 4px 8px;
+        padding: 5px 8px;
         margin-bottom: 6px;
-        font-size: 11px;
-        color: #333333;
+        font-size: 12px;
+        color: #18181b;
         font-family: monospace;
+        min-height: 28px;
+    }
+    .registro-texto {
+        overflow-x: auto;
+        white-space: nowrap;
+        margin-right: 8px;
     }
     .btn-undo {
         background-color: #e4e4e7;
@@ -64,6 +71,7 @@ st.markdown("""
         font-weight: bold;
         border-radius: 4px;
         text-decoration: none;
+        flex-shrink: 0;
     }
     
     .grid-container {
@@ -102,11 +110,11 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Estado inicial del historial
+# Estado inicial del historial (persistente)
 if "historial" not in st.session_state:
     st.session_state.historial = []
 
-# Captura de pulsaciones desde el teclado HTML
+# Procesar parámetros de URL sin limpiar el historial
 query_params = st.query_params
 
 if "add_num" in query_params:
@@ -115,9 +123,8 @@ if "add_num" in query_params:
     st.query_params.clear()
     st.rerun()
 
-# Lógica para borrar el último número
 if "undo" in query_params:
-    if st.session_state.historial:
+    if len(st.session_state.historial) > 0:
         st.session_state.historial.pop()
     st.query_params.clear()
     st.rerun()
@@ -141,20 +148,19 @@ with col_b:
         </div>
     """, unsafe_allow_html=True)
 
-# Visor de registro con botón de borrado (⌫ Borrar)
+# Visor estilo cinta de calculadora (muestra la secuencia completa)
 if st.session_state.historial:
-    ultimos = st.session_state.historial[-20:]
-    texto_registro = " - ".join(map(str, ultimos))
+    texto_registro = " - ".join(map(str, st.session_state.historial))
     st.markdown(f"""
         <div class="registro-container">
-            <div><b>Reg ({len(st.session_state.historial)}):</b> {texto_registro}</div>
+            <div class="registro-texto"><b>Reg ({len(st.session_state.historial)}):</b> {texto_registro}</div>
             <a href="?undo=1" target="_self" class="btn-undo">⌫ Borrar</a>
         </div>
     """, unsafe_allow_html=True)
 else:
     st.markdown("""
         <div class="registro-container" style="color: #999999;">
-            <div>Reg (0): Sin registros</div>
+            <div class="registro-texto">Reg (0): Sin registros</div>
         </div>
     """, unsafe_allow_html=True)
 
