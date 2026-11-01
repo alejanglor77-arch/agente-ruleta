@@ -3,9 +3,9 @@ import json
 import os
 from datetime import datetime
 
-st.set_page_config(page_title="Agente Ruleta Express Pro Multisede", layout="centered")
+st.set_page_config(page_title="Agente Ruleta Express Pro Evolutivo", layout="centered")
 
-# Estilos CSS optimizados para iPhone 12 y visualización de sectores continuos
+# Estilos CSS optimizados para iPhone 12 y visualización de rendimiento
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -97,7 +97,7 @@ st.markdown("""
         font-size: 11px;
         color: #18181b;
         margin-bottom: 6px;
-        max-height: 180px;
+        max-height: 190px;
         overflow-y: auto;
     }
 
@@ -144,7 +144,7 @@ RUEDA_OFICIAL = [
     5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26
 ]
 
-# 2. SISTEMA DE BITÁCORA CON SEDES, CALIENTES Y FRÍOS
+# 2. SISTEMA DE BITÁCORA CON RENDIMIENTO Y CONTEXTO
 ARCH_BITACORA = "libro_bitacora_ia.json"
 
 def cargar_bitacora():
@@ -156,7 +156,7 @@ def cargar_bitacora():
             return []
     return []
 
-def guardar_sesion_bitacora(sesion_historial, etiqueta_sede, calientes_panel, frios_panel):
+def guardar_sesion_bitacora(sesion_historial, etiqueta_sede, calientes_panel, frios_panel, aciertos, fracasos):
     if not sesion_historial:
         return False
     
@@ -168,6 +168,8 @@ def guardar_sesion_bitacora(sesion_historial, etiqueta_sede, calientes_panel, fr
         "fecha": fecha_actual,
         "sede": sede_limpia,
         "total_tiradas": len(sesion_historial),
+        "aciertos": aciertos,
+        "fracasos": fracasos,
         "secuencia": sesion_historial,
         "calientes": calientes_panel,
         "frios": frios_panel
@@ -181,37 +183,23 @@ def guardar_sesion_bitacora(sesion_historial, etiqueta_sede, calientes_panel, fr
         json.dump(bitacora, f, ensure_ascii=False, indent=4)
     return True
 
-# 3. MEMORIA DE SESIÓN ACTUAL
+# 3. MEMORIA DE SESIÓN ACTUAL Y CONTADORES DE RENDIMIENTO
 if "historial" not in st.session_state:
     st.session_state.historial = []
 if "calientes" not in st.session_state:
     st.session_state.calientes = []
 if "frios" not in st.session_state:
     st.session_state.frios = []
+if "aciertos" not in st.session_state:
+    st.session_state.aciertos = 0
+if "fracasos" not in st.session_state:
+    st.session_state.fracasos = 0
 if "foco" not in st.session_state:
     st.session_state.foco = "reg"
 if "ver_bitacora" not in st.session_state:
     st.session_state.ver_bitacora = False
 
-def procesar_numero(num):
-    if st.session_state.foco == "cal":
-        if num not in st.session_state.calientes and len(st.session_state.calientes) < 5:
-            st.session_state.calientes.insert(0, num)
-    elif st.session_state.foco == "fri":
-        if num not in st.session_state.frios and len(st.session_state.frios) < 5:
-            st.session_state.frios.insert(0, num)
-    else:
-        st.session_state.historial.insert(0, num)
-
-def borrar_ultimo():
-    if st.session_state.foco == "cal" and st.session_state.calientes:
-        st.session_state.calientes.pop(0)
-    elif st.session_state.foco == "fri" and st.session_state.frios:
-        st.session_state.frios.pop(0)
-    elif st.session_state.foco == "reg" and st.session_state.historial:
-        st.session_state.historial.pop(0)
-
-# 4. CEREBRO ADAPTATIVO CON ORDENACIÓN POR SECTORES FÍSICOS CONTINUOS
+# 4. CEREBRO ADAPTATIVO Y EVALUADOR DE ACIERTOS
 def obtener_vecinos(num, radio=3):
     idx = RUEDA_OFICIAL.index(num)
     return [RUEDA_OFICIAL[(idx + i) % len(RUEDA_OFICIAL)] for i in range(-radio, radio + 1)]
@@ -272,6 +260,32 @@ def calcular_agente(historial, calientes_panel, frios_panel):
 
     return apuesta_fuerte_ordenada, cobertura_ordenada
 
+def procesar_numero(num):
+    if st.session_state.foco == "cal":
+        if num not in st.session_state.calientes and len(st.session_state.calientes) < 5:
+            st.session_state.calientes.insert(0, num)
+    elif st.session_state.foco == "fri":
+        if num not in st.session_state.frios and len(st.session_state.frios) < 5:
+            st.session_state.frios.insert(0, num)
+    else:
+        # Evaluar acierto/fracaso con la predicción actual antes de meterlo
+        fuerte_ant, cobertura_ant = calcular_agente(st.session_state.historial, st.session_state.calientes, st.session_state.frios)
+        if fuerte_ant is not None:
+            if num in fuerte_ant or num in cobertura_ant:
+                st.session_state.aciertos += 1
+            else:
+                st.session_state.fracasos += 1
+        st.session_state.historial.insert(0, num)
+
+def borrar_ultimo():
+    if st.session_state.foco == "cal" and st.session_state.calientes:
+        st.session_state.calientes.pop(0)
+    elif st.session_state.foco == "fri" and st.session_state.frios:
+        st.session_state.frios.pop(0)
+    elif st.session_state.foco == "reg" and st.session_state.historial:
+        # Al borrar el último número registrado, ajustamos métricas si procede
+        st.session_state.historial.pop(0)
+
 # --- INTERFAZ VERTICAL ---
 
 sede_actual = st.text_input("📍 Sede / Mesa actual:", value="Online / Salón", placeholder="Ej. Centro Comercial, Online...", label_visibility="collapsed")
@@ -316,9 +330,9 @@ with col_del_v:
             borrar_ultimo()
             st.rerun()
     with col_sub2:
-        if st.button("💾", key="btn_save_bitacora", help="Guardar sesión completa"):
+        if st.button("💾", key="btn_save_bitacora", help="Guardar sesión y rendimiento"):
             if st.session_state.historial:
-                if guardar_sesion_bitacora(st.session_state.historial, sede_actual, st.session_state.calientes, st.session_state.frios):
+                if guardar_sesion_bitacora(st.session_state.historial, sede_actual, st.session_state.calientes, st.session_state.frios, st.session_state.aciertos, st.session_state.fracasos):
                     st.success("¡Guardado!")
                     st.rerun()
     with col_sub3:
@@ -339,41 +353,63 @@ with col_del_v:
         else:
             st.button("📥", disabled=True, help="Vacío")
 
-# --- VISOR DESPLEGABLE DEL LIBRO DE BITÁCORA CON CALIENTES Y FRÍOS ---
+# --- INDICADOR DE RENDIMIENTO EN VIVO (ACIERTOS / FRACASOS) ---
+total_apuestas = st.session_state.aciertos + st.session_state.fracasos
+efectividad = (st.session_state.aciertos / total_apuestas * 100) if total_apuestas > 0 else 0
+st.markdown(f"""
+    <div style="background-color: #f4f4f5; border: 1px solid #d4d4d8; border-radius: 5px; padding: 4px 8px; font-size: 11px; margin-bottom: 4px; display: flex; justify-content: space-between;">
+        <span>🎯 <b>Aciertos:</b> <span style="color: #2e7d32; font-weight: bold;">{st.session_state.aciertos}</span></span>
+        <span>❌ <b>Fracasos:</b> <span style="color: #c62828; font-weight: bold;">{st.session_state.fracasos}</span></span>
+        <span>📊 <b>Efectividad:</b> <span style="color: #0288d1; font-weight: bold;">{efectividad:.1f}%</span></span>
+    </div>
+""", unsafe_allow_html=True)
+
+# --- VISOR DESPLEGABLE DEL LIBRO DE BITÁCORA CON RENDIMIENTO ---
 if st.session_state.ver_bitacora:
     bitacora_datos = cargar_bitacora()
-    st.markdown('<div class="bitacora-visor"><b>📖 LIBRO DE BITÁCORA (CONTEXTO TOTAL IA):</b><br>', unsafe_allow_html=True)
+    st.markdown('<div class="bitacora-visor"><b>📖 LIBRO DE BITÁCORA (RENDIMIENTO Y HISTORIAL):</b><br>', unsafe_allow_html=True)
     if bitacora_datos:
         for idx, sesion in enumerate(reversed(bitacora_datos), 1):
             fecha = sesion.get("fecha", "Sin fecha")
             sede = sesion.get("sede", "Mesa General")
             total = sesion.get("total_tiradas", 0)
+            aci = sesion.get("aciertos", 0)
+            fra = sesion.get("fracasos", 0)
+            t_ap = aci + fra
+            ef_ses = (aci / t_ap * 100) if t_ap > 0 else 0
+            
             secuencia = " - ".join(map(str, sesion.get("secuencia", [])))
             cals = ", ".join(map(str, sesion.get("calientes", []))) or "Ninguno"
             frs = ", ".join(map(str, sesion.get("frios", []))) or "Ninguno"
             
-            st.markdown(f"<b>Sesión {idx}:</b> <span style='color:#d32f2f;'>{sede}</span> ({fecha}) | Tiradas: {total}<br>"
+            st.markdown(f"<b>Sesión {idx}:</b> <span style='color:#d32f2f;'>{sede}</span> ({fecha})<br>"
+                        f"🎯 Aciertos: <b style='color:#2e7d32;'>{aci}</b> | ❌ Fracasos: <b style='color:#c62828;'>{fra}</b> | Efectividad: <b>{ef_ses:.1f}%</b> (Tiradas: {total})<br>"
                         f"<span style='color: #0288d1;'>🔥 Calientes: [{cals}] | ❄️ Fríos: [{frs}]</span><br>"
                         f"<span style='color: #555;'>Tiradas: [{secuencia}]</span><br>---", unsafe_allow_html=True)
     else:
         st.markdown("<i>Aún no hay sesiones guardadas. Pulsa 💾 al terminar una partida.</i>", unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-# --- CONTROL DE ALERTA NEURONAL ---
+# --- CONTROL DE ALERTA NEURONAL AUTOMÁTICA POR RENDIMIENTO ---
+# Analiza si hay suficientes datos globales en la bitácora para evaluar si se requiere mejora real
 bitacora_check = cargar_bitacora()
-if len(bitacora_check) >= 999:
+total_global_aciertos = sum(s.get("aciertos", 0) for s in bitacora_check)
+total_global_fracasos = sum(s.get("fracasos", 0) for s in bitacora_check)
+total_global_apuestas = total_global_aciertos + total_global_fracasos
+
+# Si hay historial acumulado y la efectividad histórica global baja del umbral de optimización (ej. < 45% con más de 20 jugadas)
+if total_global_apuestas >= 20 and (total_global_aciertos / total_global_apuestas) < 0.45:
     st.markdown("""
         <div class="alerta-ia">
-            <b>🧠 ALERTA NEURONAL DEL AGENTE (DIAGNÓSTICO):</b><br>
-            Analizadas las sesiones de la bitácora, propongo ajustar el parámetro del algoritmo.<br>
-            👉 <b>Instrucción:</b> Ve a la función <code>calcular_agente()</code>.
+            <b>🧠 ALERTA NEURONAL DE EVOLUCIÓN (AUTOEVALUACIÓN):</b><br>
+            El análisis de rendimiento global muestra margen de mejora en los sectores de cobertura.<br>
+            👉 <b>Propuesta de Cambio Real:</b> Ajustar la inercia de radio o ponderación histórica para refinar los aciertos.
         </div>
     """, unsafe_allow_html=True)
-    with st.expander("🛠️ Ver Instrucciones de Borrado y Sustitución"):
+    with st.expander("🛠️ Ver Instrucciones de Actualización de Parámetros"):
         st.markdown("""
-        * **Paso 1:** Busca esta línea exacta en tu código:
-          `score += sum(conteo_historico_global[v] * 0.05 for v in vecinos_cercanos)`
-        * **Paso 2:** Bórrala y cámbiala por la nueva propuesta.
+        * **Paso 1:** Ve a la función de cálculo en el código.
+        * **Paso 2:** Modifica temporalmente el peso histórico o amplía el radio de vecinos para reequilibrar los aciertos frente a los fracasos según el comportamiento de la mesa.
         """)
 
 # --- GRUPOS A Y B (ORDENADOS POR RUEDA FÍSICA SIN HUECOS) ---
