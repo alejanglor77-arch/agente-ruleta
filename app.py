@@ -3,7 +3,7 @@ import json
 import os
 from datetime import datetime
 
-st.set_page_config(page_title="Agente Ruleta Express Pro Sectores", layout="centered")
+st.set_page_config(page_title="Agente Ruleta Express Pro Multisede", layout="centered")
 
 # Estilos CSS optimizados para iPhone 12 y visualización de sectores continuos
 st.markdown("""
@@ -97,7 +97,7 @@ st.markdown("""
         font-size: 11px;
         color: #18181b;
         margin-bottom: 6px;
-        max-height: 160px;
+        max-height: 180px;
         overflow-y: auto;
     }
 
@@ -144,7 +144,7 @@ RUEDA_OFICIAL = [
     5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26
 ]
 
-# 2. SISTEMA DE BITÁCORA Y MEMORIA CON ETIQUETAS DE SEDE
+# 2. SISTEMA DE BITÁCORA CON SEDES, CALIENTES Y FRÍOS
 ARCH_BITACORA = "libro_bitacora_ia.json"
 
 def cargar_bitacora():
@@ -156,7 +156,7 @@ def cargar_bitacora():
             return []
     return []
 
-def guardar_sesion_bitacora(sesion_historial, etiqueta_sede):
+def guardar_sesion_bitacora(sesion_historial, etiqueta_sede, calientes_panel, frios_panel):
     if not sesion_historial:
         return False
     
@@ -168,7 +168,9 @@ def guardar_sesion_bitacora(sesion_historial, etiqueta_sede):
         "fecha": fecha_actual,
         "sede": sede_limpia,
         "total_tiradas": len(sesion_historial),
-        "secuencia": sesion_historial
+        "secuencia": sesion_historial,
+        "calientes": calientes_panel,
+        "frios": frios_panel
     }
     
     bitacora.append(nueva_entrada)
@@ -215,7 +217,6 @@ def obtener_vecinos(num, radio=3):
     return [RUEDA_OFICIAL[(idx + i) % len(RUEDA_OFICIAL)] for i in range(-radio, radio + 1)]
 
 def ordenar_por_rueda(lista_numeros):
-    """Ordena una lista de números según su posición física estricta en el cilindro."""
     return [n for n in RUEDA_OFICIAL if n in lista_numeros]
 
 def calcular_agente(historial, calientes_panel, frios_panel):
@@ -262,10 +263,8 @@ def calcular_agente(historial, calientes_panel, frios_panel):
         if len(apuesta_fuerte) < 5 or (len(apuesta_fuerte) < 8 and puntuaciones[n] >= max_score * 0.6):
             apuesta_fuerte.append(n)
 
-    # Coherencia física: Ordenar el ataque fuerte estrictamente en el orden del cilindro
     apuesta_fuerte_ordenada = ordenar_por_rueda(apuesta_fuerte)
 
-    # Cobertura de inercia contigua sin huecos alrededor del último número registrado
     ultimo_num = historial[0] if historial else (calientes_panel[0] if calientes_panel else 0)
     vecinos_amplios = obtener_vecinos(ultimo_num, radio=4)
     cobertura_inercia = [n for n in vecinos_amplios if n not in apuesta_fuerte]
@@ -317,9 +316,9 @@ with col_del_v:
             borrar_ultimo()
             st.rerun()
     with col_sub2:
-        if st.button("💾", key="btn_save_bitacora", help="Guardar sesión con sede"):
+        if st.button("💾", key="btn_save_bitacora", help="Guardar sesión completa"):
             if st.session_state.historial:
-                if guardar_sesion_bitacora(st.session_state.historial, sede_actual):
+                if guardar_sesion_bitacora(st.session_state.historial, sede_actual, st.session_state.calientes, st.session_state.frios):
                     st.success("¡Guardado!")
                     st.rerun()
     with col_sub3:
@@ -340,17 +339,22 @@ with col_del_v:
         else:
             st.button("📥", disabled=True, help="Vacío")
 
-# --- VISOR DESPLEGABLE DEL LIBRO DE BITÁCORA ---
+# --- VISOR DESPLEGABLE DEL LIBRO DE BITÁCORA CON CALIENTES Y FRÍOS ---
 if st.session_state.ver_bitacora:
     bitacora_datos = cargar_bitacora()
-    st.markdown('<div class="bitacora-visor"><b>📖 LIBRO DE BITÁCORA (MULTISEDE):</b><br>', unsafe_allow_html=True)
+    st.markdown('<div class="bitacora-visor"><b>📖 LIBRO DE BITÁCORA (CONTEXTO TOTAL IA):</b><br>', unsafe_allow_html=True)
     if bitacora_datos:
         for idx, sesion in enumerate(reversed(bitacora_datos), 1):
             fecha = sesion.get("fecha", "Sin fecha")
             sede = sesion.get("sede", "Mesa General")
             total = sesion.get("total_tiradas", 0)
             secuencia = " - ".join(map(str, sesion.get("secuencia", [])))
-            st.markdown(f"<b>Sesión {idx}:</b> <span style='color:#d32f2f;'>{sede}</span> ({fecha}) | Tiradas: {total}<br><span style='color: #555;'>[{secuencia}]</span><br>---", unsafe_allow_html=True)
+            cals = ", ".join(map(str, sesion.get("calientes", []))) or "Ninguno"
+            frs = ", ".join(map(str, sesion.get("frios", []))) or "Ninguno"
+            
+            st.markdown(f"<b>Sesión {idx}:</b> <span style='color:#d32f2f;'>{sede}</span> ({fecha}) | Tiradas: {total}<br>"
+                        f"<span style='color: #0288d1;'>🔥 Calientes: [{cals}] | ❄️ Fríos: [{frs}]</span><br>"
+                        f"<span style='color: #555;'>Tiradas: [{secuencia}]</span><br>---", unsafe_allow_html=True)
     else:
         st.markdown("<i>Aún no hay sesiones guardadas. Pulsa 💾 al terminar una partida.</i>", unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
