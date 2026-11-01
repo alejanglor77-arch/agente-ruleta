@@ -126,27 +126,28 @@ if "frios" not in st.session_state:
 if "foco" not in st.session_state:
     st.session_state.foco = "reg"
 
-# Funciones de procesamiento
+# Funciones de procesamiento con inserción al principio (MÁS RECIENTE A LA IZQUIERDA)
 def procesar_numero(num):
     if st.session_state.foco == "cal":
         if num not in st.session_state.calientes and len(st.session_state.calientes) < 5:
-            st.session_state.calientes.append(num)
+            st.session_state.calientes.insert(0, num)
     elif st.session_state.foco == "fri":
         if num not in st.session_state.frios and len(st.session_state.frios) < 5:
-            st.session_state.frios.append(num)
+            st.session_state.frios.insert(0, num)
     else:
-        st.session_state.historial.append(num)
+        # En el registro, el número recién tecleado entra en la primera posición (índice 0)
+        st.session_state.historial.insert(0, num)
 
 def borrar_ultimo():
     if st.session_state.foco == "cal":
         if st.session_state.calientes:
-            st.session_state.calientes.pop()
+            st.session_state.calientes.pop(0)
     elif st.session_state.foco == "fri":
         if st.session_state.frios:
-            st.session_state.frios.pop()
+            st.session_state.frios.pop(0)
     else:
         if st.session_state.historial:
-            st.session_state.historial.pop()
+            st.session_state.historial.pop(0)
 
 # 2. Selección de cajetín mediante botones nativos
 col_sel_cal, col_sel_fri, col_sel_reg = st.columns(3)
