@@ -2,7 +2,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Agente", layout="centered")
 
-# CSS para compactar botones nativos y evitar scroll en móvil
+# Ocultar cabeceras y definir la cuadrícula CSS indestructible
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -40,7 +40,10 @@ st.markdown("""
         font-weight: 400;
         color: #555555;
     }
-    .registro-box {
+    .registro-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         background-color: #f4f4f5;
         border: 1px solid #e4e4e7;
         border-radius: 5px;
@@ -51,18 +54,49 @@ st.markdown("""
         font-family: monospace;
         min-height: 28px;
     }
-    /* Fuerza botones ultracompactos en la cuadrícula */
-    div.stButton > button {
-        width: 100% !important;
-        height: 32px !important;
-        padding: 0px !important;
-        font-size: 13px !important;
-        font-weight: 600 !important;
-        background-color: #ffffff !important;
-        color: #333333 !important;
-        border: 1px solid #dcdcdc !important;
-        border-radius: 4px !important;
-        margin: 0px !important;
+    .registro-texto {
+        overflow-x: auto;
+        white-space: nowrap;
+        margin-right: 8px;
+    }
+    
+    /* Cuadrícula fija de 4 columnas en HTML */
+    .grid-container {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 3px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .btn-kbd {
+        background-color: #ffffff;
+        border: 1px solid #dcdcdc;
+        color: #333333;
+        padding: 6px 0;
+        text-align: center;
+        font-weight: 600;
+        font-size: 13px;
+        border-radius: 4px;
+        cursor: pointer;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .btn-kbd:active {
+        background-color: #e4e4e7;
+    }
+    .btn-zero {
+        grid-column: span 4;
+        margin-bottom: 3px;
+    }
+    .btn-undo-style {
+        background-color: #e4e4e7;
+        border: 1px solid #d4d4d8;
+        color: #333333;
+        padding: 2px 8px;
+        font-size: 11px;
+        font-weight: bold;
+        border-radius: 4px;
+        cursor: pointer;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -70,6 +104,21 @@ st.markdown("""
 # Estado persistente del historial
 if "historial" not in st.session_state:
     st.session_state.historial = []
+
+# Procesar acciones recibidas mediante parámetros URL sin resetear el estado
+query_params = st.query_params
+
+if "val" in query_params:
+    num_pulsado = int(query_params["val"])
+    st.session_state.historial.append(num_pulsado)
+    st.query_params.clear()
+    st.rerun()
+
+if "act" in query_params and query_params["act"] == "undo":
+    if len(st.session_state.historial) > 0:
+        st.session_state.historial.pop()
+    st.query_params.clear()
+    st.rerun()
 
 # Tarjetas superiores sobrias
 col_a, col_b = st.columns(2)
@@ -90,32 +139,28 @@ with col_b:
         </div>
     """, unsafe_allow_html=True)
 
-# Visor de registro e icono de borrado integrado
-col_reg, col_del = st.columns([0.8, 0.2])
+# Visor de registro con avance continuo y botón de borrado
+if st.session_state.historial:
+    texto_registro = " - ".join(map(str, st.session_state.historial))
+    st.markdown(f"""
+        <div class="registro-container">
+            <div class="registro-texto"><b>Reg ({len(st.session_state.historial)}):</b> {texto_registro}</div>
+            <a href="?act=undo" target="_self" style="text-decoration:none;"><button class="btn-undo-style">⌫ Borrar</button></a>
+        </div>
+    """, unsafe_allow_html=True)
+else:
+    st.markdown("""
+        <div class="registro-container" style="color: #999999;">
+            <div class="registro-texto">Reg (0): Sin registros</div>
+        </div>
+    """, unsafe_allow_html=True)
 
-with col_reg:
-    if st.session_state.historial:
-        texto_registro = " - ".join(map(str, st.session_state.historial))
-        st.markdown(f'<div class="registro-box"><b>Reg ({len(st.session_state.historial)}):</b> {texto_registro}</div>', unsafe_allow_html=True)
-    else:
-        st.markdown('<div class="registro-box" style="color: #999999;">Reg (0): Sin registros</div>', unsafe_allow_html=True)
+# Teclado en HTML puro para forzar las 4 columnas en iPhone 12 sin desordenar
+html_teclado = '<a href="?val=0" target="_self" style="text-decoration:none;"><button class="btn-kbd btn-zero">0</button></a><div class="grid-container">'
 
-with col_del:
-    if st.button("⌫"):
-        if len(st.session_state.historial) > 0:
-            st.session_state.historial.pop()
-            st.rerun()
+for n in range(1, 37):
+    html_teclado += f'<a href="?val={n}" target="_self" style="text-decoration:none;"><button class="btn-kbd">{n}</button></a>'
 
-# Botón Cero
-if st.button("0", use_container_width=True):
-    st.session_state.historial.append(0)
-    st.rerun()
+html_teclado += "</div>"
 
-# Teclado matricial rígido (1 al 36)
-cols = st.columns(4)
-for num in range(1, 37):
-    col_idx = (num - 1) % 4
-    with cols[col_idx]:
-        if st.button(str(num), key=f"btn_{num}"):
-            st.session_state.historial.append(num)
-            st.rerun()
+st.markdown(html_teclado, unsafe_allow_html=True)
