@@ -3,7 +3,7 @@ import json
 import os
 from datetime import datetime
 
-st.set_page_config(page_title="Agente Ruleta Express Pro Inteligente", layout="centered")
+st.set_page_config(page_title="Agente Ruleta Express Pro Multisede", layout="centered")
 
 # Estilos CSS optimizados para iPhone 12
 st.markdown("""
@@ -94,18 +94,8 @@ st.markdown("""
         font-size: 11px;
         color: #18181b;
         margin-bottom: 6px;
-        max-height: 150px;
+        max-height: 160px;
         overflow-y: auto;
-    }
-
-    .alerta-ia {
-        background-color: #eff6ff;
-        border: 1px solid #3b82f6;
-        border-radius: 6px;
-        padding: 6px 8px;
-        font-size: 11px;
-        color: #1e40af;
-        margin-bottom: 4px;
     }
 
     div[data-testid="stHorizontalBlock"] {
@@ -141,7 +131,7 @@ RUEDA_OFICIAL = [
     5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26
 ]
 
-# 2. SISTEMA DE BITÁCORA Y MEMORIA CON FECHAS
+# 2. SISTEMA DE BITÁCORA Y MEMORIA CON ETIQUETAS DE SEDE
 ARCH_BITACORA = "libro_bitacora_ia.json"
 
 def cargar_bitacora():
@@ -153,15 +143,17 @@ def cargar_bitacora():
             return []
     return []
 
-def guardar_sesion_bitacora(sesion_historial):
+def guardar_sesion_bitacora(sesion_historial, etiqueta_sede):
     if not sesion_historial:
         return False
     
     bitacora = cargar_bitacora()
     fecha_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    sede_limpia = etiqueta_sede.strip() if etiqueta_sede.strip() else "Mesa General"
     
     nueva_entrada = {
         "fecha": fecha_actual,
+        "sede": sede_limpia,
         "total_tiradas": len(sesion_historial),
         "secuencia": sesion_historial
     }
@@ -204,7 +196,7 @@ def borrar_ultimo():
     elif st.session_state.foco == "reg" and st.session_state.historial:
         st.session_state.historial.pop(0)
 
-# 4. CEREBRO ADAPTATIVO (ACTUALIZADO CON PESO 0.08)
+# 4. CEREBRO ADAPTATIVO
 def obtener_vecinos(num, radio=3):
     idx = RUEDA_OFICIAL.index(num)
     return [RUEDA_OFICIAL[(idx + i) % len(RUEDA_OFICIAL)] for i in range(-radio, radio + 1)]
@@ -262,6 +254,9 @@ def calcular_agente(historial, calientes_panel, frios_panel):
 
 # --- INTERFAZ VERTICAL ---
 
+# CAMPO DE TEXTO DISCRETO PARA ETIQUETAR LA SEDE / MESA
+sede_actual = st.text_input("📍 Sede / Mesa actual:", value="Online / Salón", placeholder="Ej. Centro Comercial, Online...", label_visibility="collapsed")
+
 # 1. BLOQUE CALIENTES
 if st.button("🔥 Calientes [✓]" if st.session_state.foco == "cal" else "🔥 Calientes", key="btn_foco_cal", use_container_width=True):
     st.session_state.foco = "cal"
@@ -302,9 +297,9 @@ with col_del_v:
             borrar_ultimo()
             st.rerun()
     with col_sub2:
-        if st.button("💾", key="btn_save_bitacora", help="Guardar sesión"):
+        if st.button("💾", key="btn_save_bitacora", help="Guardar sesión con sede"):
             if st.session_state.historial:
-                if guardar_sesion_bitacora(st.session_state.historial):
+                if guardar_sesion_bitacora(st.session_state.historial, sede_actual):
                     st.success("¡Guardado!")
                     st.rerun()
     with col_sub3:
@@ -325,37 +320,20 @@ with col_del_v:
         else:
             st.button("📥", disabled=True, help="Vacío")
 
-# --- VISOR DESPLEGABLE DEL LIBRO DE BITÁCORA ---
+# --- VISOR DESPLEGABLE DEL LIBRO DE BITÁCORA CON SEDES ---
 if st.session_state.ver_bitacora:
     bitacora_datos = cargar_bitacora()
-    st.markdown('<div class="bitacora-visor"><b>📖 LIBRO DE BITÁCORA (MEMORIA IA):</b><br>', unsafe_allow_html=True)
+    st.markdown('<div class="bitacora-visor"><b>📖 LIBRO DE BITÁCORA (MULTISEDE):</b><br>', unsafe_allow_html=True)
     if bitacora_datos:
         for idx, sesion in enumerate(reversed(bitacora_datos), 1):
             fecha = sesion.get("fecha", "Sin fecha")
+            sede = sesion.get("sede", "Mesa General")
             total = sesion.get("total_tiradas", 0)
             secuencia = " - ".join(map(str, sesion.get("secuencia", [])))
-            st.markdown(f"<b>Sesión {idx}</b> ({fecha}) | Tiradas: {total}<br><span style='color: #555;'>[{secuencia}]</span><br>---", unsafe_allow_html=True)
+            st.markdown(f"<b>Sesión {idx}:</b> <span style='color:#d32f2f;'>{sede}</span> ({fecha}) | Tiradas: {total}<br><span style='color: #555;'>[{secuencia}]</span><br>---", unsafe_allow_html=True)
     else:
         st.markdown("<i>Aún no hay sesiones guardadas. Pulsa 💾 al terminar una partida.</i>", unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
-
-# --- CONTROL DE ALERTA NEURONAL (CONDICIÓN REAL DE ACTIVACIÓN FUTURA) ---
-# Aquí puedes cambiar el número '999' en el futuro por el umbral real cuando el agente deba levantar la mano de verdad.
-bitacora_check = cargar_bitacora()
-if len(bitacora_check) >= 999:  # Puesto alto a propósito para que permanezca en silencio hasta que haya una alerta real
-    st.markdown("""
-        <div class="alerta-ia">
-            <b>🧠 ALERTA NEURONAL DEL AGENTE (DIAGNÓSTICO):</b><br>
-            Analizadas las sesiones de la bitácora, propongo ajustar el parámetro del algoritmo.<br>
-            👉 <b>Instrucción:</b> Ve a la función <code>calcular_agente()</code> (alrededor de la <b>línea 145</b>).
-        </div>
-    """, unsafe_allow_html=True)
-    with st.expander("🛠️ Ver Instrucciones de Borrado y Sustitución"):
-        st.markdown("""
-        * **Paso 1:** Busca esta línea exacta en tu código:
-          `score += sum(conteo_historico_global[v] * 0.05 for v in vecinos_cercanos)`
-        * **Paso 2:** Bórrala y cámbiala por la nueva propuesta.
-        """)
 
 # --- GRUPOS A Y B ---
 fuerte, cobertura = calcular_agente(st.session_state.historial, st.session_state.calientes, st.session_state.frios)
