@@ -2,7 +2,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Agente", layout="centered")
 
-# CSS para forzar el teclado matricial perfecto en iPhone
+# Estilo discreto general
 st.markdown("""
     <style>
     .card-discreta {
@@ -40,36 +40,20 @@ st.markdown("""
         margin-bottom: 10px;
         font-family: monospace;
     }
-    /* Estructura fija de teclado para móvil */
-    .grid-teclado {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 4px;
-        width: 100%;
-        margin-top: 5px;
-    }
-    /* Redefinición estricta de botones de Streamlit */
-    div.element-container:has(button) {
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-    div.stButton > button {
-        width: 100% !important;
-        height: 38px !important;
-        padding: 0px !important;
-        font-size: 14px !important;
-        font-weight: 600 !important;
-        background-color: #ffffff !important;
-        color: #333333 !important;
-        border: 1px solid #dcdcdc !important;
-        border-radius: 4px !important;
-    }
     </style>
 """, unsafe_allow_html=True)
 
 # Estado inicial del historial
 if "historial" not in st.session_state:
     st.session_state.historial = []
+
+# Captura de pulsaciones desde el teclado HTML
+query_params = st.query_params
+if "add_num" in query_params:
+    num_pulsado = int(query_params["add_num"])
+    st.session_state.historial.append(num_pulsado)
+    st.query_params.clear()
+    st.rerun()
 
 # Tarjetas superiores sobrias
 col_a, col_b = st.columns(2)
@@ -106,14 +90,51 @@ else:
         </div>
     """, unsafe_allow_html=True)
 
-# Botón Cero arriba
-if st.button("0", use_container_width=True):
-    st.session_state.historial.append(0)
+# Generación del Teclado Rígido HTML de 4 columnas
+html_teclado = """
+<style>
+    .grid-container {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 4px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .btn-zero {
+        grid-column: span 4;
+        background-color: #ffffff;
+        border: 1px solid #dcdcdc;
+        color: #333333;
+        padding: 8px 0;
+        text-align: center;
+        font-weight: 600;
+        font-size: 15px;
+        border-radius: 4px;
+        text-decoration: none;
+        display: block;
+        margin-bottom: 4px;
+    }
+    .btn-num {
+        background-color: #ffffff;
+        border: 1px solid #dcdcdc;
+        color: #333333;
+        padding: 8px 0;
+        text-align: center;
+        font-weight: 600;
+        font-size: 14px;
+        border-radius: 4px;
+        text-decoration: none;
+        display: block;
+    }
+</style>
 
-# Teclado compacto ordenado (1 al 36) en 4 columnas estrictas
-cols = st.columns(4)
-for num in range(1, 37):
-    col_idx = (num - 1) % 4
-    with cols[col_idx]:
-        if st.button(str(num), key=f"num_{num}"):
-            st.session_state.historial.append(num)
+<a href="?add_num=0" target="_self" class="btn-zero">0</a>
+<div class="grid-container">
+"""
+
+for n in range(1, 37):
+    html_teclado += f'<a href="?add_num={n}" target="_self" class="btn-num">{n}</a>'
+
+html_teclado += "</div>"
+
+st.markdown(html_teclado, unsafe_allow_html=True)
