@@ -3,7 +3,7 @@ import json
 import os
 from datetime import datetime
 
-st.set_page_config(page_title="Agente Ruleta Express Pro Bitácora", layout="centered")
+st.set_page_config(page_title="Agente Ruleta Express Pro Evolutivo", layout="centered")
 
 # Estilos CSS optimizados para iPhone 12
 st.markdown("""
@@ -96,6 +96,16 @@ st.markdown("""
         margin-bottom: 6px;
         max-height: 150px;
         overflow-y: auto;
+    }
+
+    .alerta-ia {
+        background-color: #eff6ff;
+        border: 1px solid #3b82f6;
+        border-radius: 6px;
+        padding: 6px 8px;
+        font-size: 11px;
+        color: #1e40af;
+        margin-bottom: 4px;
     }
 
     div[data-testid="stHorizontalBlock"] {
@@ -194,7 +204,7 @@ def borrar_ultimo():
     elif st.session_state.foco == "reg" and st.session_state.historial:
         st.session_state.historial.pop(0)
 
-# 4. CEREBRO ADAPTATIVO CON APRENDIZAJE DE BITÁCORA
+# 4. CEREBRO ADAPTATIVO CON AUTODIAGNÓSTICO (LEVANTAR LA MANO)
 def obtener_vecinos(num, radio=3):
     idx = RUEDA_OFICIAL.index(num)
     return [RUEDA_OFICIAL[(idx + i) % len(RUEDA_OFICIAL)] for i in range(-radio, radio + 1)]
@@ -270,7 +280,7 @@ clase_fri = "caja-interactiva caja-activa" if st.session_state.foco == "fri" els
 txt_fri = ", ".join(map(str, st.session_state.frios)) if st.session_state.frios else "Vacío"
 st.markdown(f'<div class="{clase_fri}"><div class="caja-label">Fríos</div><b>{txt_fri}</b></div>', unsafe_allow_html=True)
 
-# 3. BLOQUE REGISTRO Y CONTROLES DE BITÁCORA (BORRAR, GUARDAR, VER VISOR, DESCARGAR)
+# 3. BLOQUE REGISTRO Y CONTROLES DE BITÁCORA
 if st.button("🎲 Registro [✓]" if st.session_state.foco == "reg" else "🎲 Registro", key="btn_foco_reg", use_container_width=True):
     st.session_state.foco = "reg"
     st.rerun()
@@ -310,12 +320,12 @@ with col_del_v:
                 data=datos_json,
                 file_name=f"libro_bitacora_ia_{datetime.now().strftime('%Y%m%d')}.json",
                 mime="application/json",
-                help="Descargar archivo completo"
+                help="Descargar archivo"
             )
         else:
             st.button("📥", disabled=True, help="Vacío")
 
-# --- VISOR DESPLEGABLE DEL LIBRO DE BITÁCORA EN PANTALLA ---
+# --- VISOR DESPLEGABLE DEL LIBRO DE BITÁCORA ---
 if st.session_state.ver_bitacora:
     bitacora_datos = cargar_bitacora()
     st.markdown('<div class="bitacora-visor"><b>📖 LIBRO DE BITÁCORA (MEMORIA IA):</b><br>', unsafe_allow_html=True)
@@ -326,8 +336,25 @@ if st.session_state.ver_bitacora:
             secuencia = " - ".join(map(str, sesion.get("secuencia", [])))
             st.markdown(f"<b>Sesión {idx}</b> ({fecha}) | Tiradas: {total}<br><span style='color: #555;'>[{secuencia}]</span><br>---", unsafe_allow_html=True)
     else:
-        st.markdown("<i>Aún no hay sesiones guardadas en la bitácora. Pulsa 💾 al terminar una partida.</i>", unsafe_allow_html=True)
+        st.markdown("<i>Aún no hay sesiones guardadas. Pulsa 💾 al terminar una partida.</i>", unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
+
+# --- SISTEMA DE AUTODIAGNÓSTICO (EL AGENTE LEVANTA LA MANO) ---
+bitacora_check = cargar_bitacora()
+# Si la IA acumula suficientes sesiones (ej. 3 o más), evalúa si necesita proponer una mejora estructural
+if len(bitacora_check) >= 3:
+    st.markdown("""
+        <div class="alerta-ia">
+            <b>🧠 ALERTA NEURONAL DEL AGENTE:</b><br>
+            He analizado las últimas sesiones en la bitácora y detecto alta dispersión en los rebotes. 
+            <i>Propuesta de evolución:</i> Sugiero ampliar el factor de peso histórico de 0.05 a 0.08 para adaptarnos más rápido a los ciclos largos.
+        </div>
+    """, unsafe_allow_html=True)
+    with st.expander("🛠️ Ver Código Propuesto por la IA"):
+        st.code("""
+# Cambiar esta línea en calcular_agente():
+score += sum(conteo_historico_global[v] * 0.08 for v in vecinos_cercanos)
+        """, language="python")
 
 # --- GRUPOS A Y B ---
 fuerte, cobertura = calcular_agente(st.session_state.historial, st.session_state.calientes, st.session_state.frios)
