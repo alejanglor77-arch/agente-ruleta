@@ -2,43 +2,92 @@ import streamlit as st
 
 st.set_page_config(page_title="Agente", layout="centered")
 
-# Estilo discreto general
+# Estilo ultra compacto para evitar todo scroll en iPhone 12
 st.markdown("""
     <style>
+    /* Ocultar elementos sobrantes de la interfaz de Streamlit */
+    #MainMenu {visibility: hidden;}
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    .block-container {
+        padding-top: 0.5rem !important;
+        padding-bottom: 0rem !important;
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+    }
+    
+    /* Tarjetas superiores sobrias y compactas */
     .card-discreta {
         background-color: #f9f9f9;
         border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        padding: 10px;
+        border-radius: 6px;
+        padding: 6px;
         text-align: center;
         color: #4a4a4a;
-        margin-bottom: 8px;
+        margin-bottom: 4px;
     }
     .card-titulo {
-        font-size: 11px;
+        font-size: 10px;
         text-transform: uppercase;
         letter-spacing: 1px;
         color: #888888;
-        margin-bottom: 2px;
+        margin-bottom: 1px;
     }
     .card-valores-fuerte {
-        font-size: 18px;
+        font-size: 16px;
         font-weight: 800;
         color: #1a1a1a;
     }
     .card-valores-suave {
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 400;
         color: #555555;
     }
+    
+    /* Visor de registro ultracompacto */
     .registro-box {
         background-color: #f4f4f5;
-        border-radius: 6px;
-        padding: 6px 10px;
-        font-size: 12px;
+        border-radius: 5px;
+        padding: 4px 8px;
+        font-size: 11px;
         color: #333333;
-        margin-bottom: 10px;
+        margin-bottom: 6px;
         font-family: monospace;
+    }
+    
+    /* Teclado numérico ajustado a la pantalla de móvil */
+    .grid-container {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 3px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .btn-zero {
+        grid-column: span 4;
+        background-color: #ffffff;
+        border: 1px solid #dcdcdc;
+        color: #333333;
+        padding: 5px 0;
+        text-align: center;
+        font-weight: 600;
+        font-size: 13px;
+        border-radius: 4px;
+        text-decoration: none;
+        display: block;
+        margin-bottom: 3px;
+    }
+    .btn-num {
+        background-color: #ffffff;
+        border: 1px solid #dcdcdc;
+        color: #333333;
+        padding: 5px 0;
+        text-align: center;
+        font-weight: 600;
+        font-size: 13px;
+        border-radius: 4px;
+        text-decoration: none;
+        display: block;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -90,47 +139,8 @@ else:
         </div>
     """, unsafe_allow_html=True)
 
-# Generación del Teclado Rígido HTML de 4 columnas
-html_teclado = """
-<style>
-    .grid-container {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 4px;
-        width: 100%;
-        box-sizing: border-box;
-    }
-    .btn-zero {
-        grid-column: span 4;
-        background-color: #ffffff;
-        border: 1px solid #dcdcdc;
-        color: #333333;
-        padding: 8px 0;
-        text-align: center;
-        font-weight: 600;
-        font-size: 15px;
-        border-radius: 4px;
-        text-decoration: none;
-        display: block;
-        margin-bottom: 4px;
-    }
-    .btn-num {
-        background-color: #ffffff;
-        border: 1px solid #dcdcdc;
-        color: #333333;
-        padding: 8px 0;
-        text-align: center;
-        font-weight: 600;
-        font-size: 14px;
-        border-radius: 4px;
-        text-decoration: none;
-        display: block;
-    }
-</style>
-
-<a href="?add_num=0" target="_self" class="btn-zero">0</a>
-<div class="grid-container">
-"""
+# Generación del Teclado Rígido HTML Ultra Compacto
+html_teclado = '<a href="?add_num=0" target="_self" class="btn-zero">0</a><div class="grid-container">'
 
 for n in range(1, 37):
     html_teclado += f'<a href="?add_num={n}" target="_self" class="btn-num">{n}</a>'
