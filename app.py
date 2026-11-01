@@ -78,7 +78,7 @@ st.markdown("""
         margin-right: 6px;
     }
 
-    /* Teclado en FILAS fluidas (manteniendo la estructura exacta que funcionaba) */
+    /* Teclado en FILAS fluidas */
     .teclado-filas {
         display: flex;
         flex-wrap: wrap;
@@ -98,12 +98,11 @@ st.markdown("""
         font-weight: 600;
         font-size: 13px;
         text-align: center;
+        text-decoration: none;
         display: flex;
         align-items: center;
         justify-content: center;
         box-sizing: border-box;
-        cursor: pointer;
-        user-select: none;
     }
     .btn-zero-fila {
         flex: 1 0 100%;
@@ -116,13 +115,12 @@ st.markdown("""
         font-weight: 700;
         font-size: 14px;
         text-align: center;
+        text-decoration: none;
         display: flex;
         align-items: center;
         justify-content: center;
         margin-bottom: 2px;
         box-sizing: border-box;
-        cursor: pointer;
-        user-select: none;
     }
 
     /* Resaltados de color tenue */
@@ -142,58 +140,46 @@ st.markdown("""
         color: #333;
         font-weight: bold;
         border: 1px solid #d4d4d8;
-        padding: 2px 8px;
+        padding: 2px 6px;
         border-radius: 4px;
-        cursor: pointer;
+        text-decoration: none;
         font-size: 11px;
     }
     </style>
-
-    <script>
-    function pressNum(val) {
-        const url = new URL(window.location.href);
-        url.searchParams.set('add_val', val);
-        window.location.href = url.toString();
-    }
-    function pressDel() {
-        const url = new URL(window.location.href);
-        url.searchParams.set('del_act', '1');
-        window.location.href = url.toString();
-    }
-    </script>
 """, unsafe_allow_html=True)
 
-# Estado interno persistente para acumular la secuencia completa
+# Memoria de estado para el historial acumulado
 if "historial" not in st.session_state:
     st.session_state.historial = []
 
-# Procesar capturas de pulsación manteniendo el historial intacto
+# Procesamiento directo de los clicks del teclado en filas
 query_params = st.query_params
 
-if "add_val" in query_params:
-    st.session_state.historial.append(int(query_params["add_val"]))
+if "press" in query_params:
+    num_pulsado = int(query_params["press"])
+    st.session_state.historial.append(num_pulsado)
     st.query_params.clear()
     st.rerun()
 
-if "del_act" in query_params:
+if "clear_last" in query_params:
     if len(st.session_state.historial) > 0:
         st.session_state.historial.pop()
     st.query_params.clear()
     st.rerun()
 
-# Extraer calientes y fríos para colorear teclas
+# Extraer números de los campos
 def parse_numeros(texto):
     if not texto:
         return set()
     nums = re.findall(r'\b\d+\b', texto)
     return {int(n) for n in nums if 0 <= int(n) <= 36}
 
-# 1. Calientes y Fríos discretos arriba
+# 1. Calientes y Fríos discretos arriba (Desactivado autocompletado de datos personales)
 col_cal, col_fri = st.columns(2)
 with col_cal:
-    in_calientes = st.text_input("Calientes (opcional)", placeholder="Ej: 3, 17...", key="in_cal")
+    in_calientes = st.text_input("Calientes (opcional)", placeholder="Ej: 3, 17...", key="in_cal", autocomplete="off")
 with col_fri:
-    in_frios = st.text_input("Fríos (opcional)", placeholder="Ej: 0, 12...", key="in_fri")
+    in_frios = st.text_input("Fríos (opcional)", placeholder="Ej: 0, 12...", key="in_fri", autocomplete="off")
 
 set_calientes = parse_numeros(in_calientes)
 set_frios = parse_numeros(in_frios)
@@ -216,13 +202,13 @@ with col_b:
         </div>
     """, unsafe_allow_html=True)
 
-# 3. Visor de registro continuo + Botón ⌫ Borrar
+# 3. Visor del historial acumulativo con botón ⌫ Borrar
 if st.session_state.historial:
     texto_registro = " - ".join(map(str, st.session_state.historial))
     st.markdown(f"""
         <div class="registro-container">
             <div class="registro-texto"><b>Reg ({len(st.session_state.historial)}):</b> {texto_registro}</div>
-            <div class="btn-del-style" onclick="pressDel()">⌫ Borrar</div>
+            <a href="?clear_last=1" target="_self" class="btn-del-style">⌫ Borrar</a>
         </div>
     """, unsafe_allow_html=True)
 else:
@@ -232,7 +218,7 @@ else:
         </div>
     """, unsafe_allow_html=True)
 
-# 4. Teclado en FILAS adaptables con sombreado tenue y registro acumulativo
+# 4. Teclado en FILAS adaptables con links de accionamiento directo
 html_teclado = '<div class="teclado-filas">'
 
 # Botón 0
@@ -242,7 +228,7 @@ if 0 in set_calientes:
 elif 0 in set_frios:
     clase_zero += " btn-frio"
 
-html_teclado += f'<div onclick="pressNum(0)" class="{clase_zero}">0</div>'
+html_teclado += f'<a href="?press=0" target="_self" class="{clase_zero}">0</a>'
 
 # Botones 1 al 36 en filas
 for n in range(1, 37):
@@ -252,7 +238,7 @@ for n in range(1, 37):
     elif n in set_frios:
         clase_btn += " btn-frio"
     
-    html_teclado += f'<div onclick="pressNum({n})" class="{clase_btn}">{n}</div>'
+    html_teclado += f'<a href="?press={n}" target="_self" class="{clase_btn}">{n}</a>'
 
 html_teclado += '</div>'
 
