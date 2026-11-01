@@ -2,7 +2,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Agente Ruleta Express", layout="centered")
 
-# CSS Ajustado para 2 columnas (Lectura 100% clara en iPhone, scroll vertical fluido)
+# CSS para forzar FILAS HORIZONTALES REALES en iPhone sin scroll lateral ni listas largas
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -10,35 +10,34 @@ st.markdown("""
     footer {visibility: hidden;}
     
     .block-container {
-        padding-top: 0.5rem !important;
-        padding-bottom: 2rem !important;
-        padding-left: 0.5rem !important;
-        padding-right: 0.5rem !important;
+        padding-top: 0.2rem !important;
+        padding-bottom: 0.5rem !important;
+        padding-left: 0.2rem !important;
+        padding-right: 0.2rem !important;
     }
 
     .card-discreta {
         background-color: #f9f9f9;
         border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        padding: 8px;
+        border-radius: 6px;
+        padding: 4px;
         text-align: center;
         color: #4a4a4a;
-        margin-bottom: 6px;
+        margin-bottom: 3px;
     }
     .card-titulo {
-        font-size: 11px;
+        font-size: 9px;
         text-transform: uppercase;
         color: #888888;
-        margin-bottom: 2px;
         font-weight: bold;
     }
     .card-valores-fuerte {
-        font-size: 18px;
+        font-size: 14px;
         font-weight: 800;
         color: #d32f2f;
     }
     .card-valores-suave {
-        font-size: 16px;
+        font-size: 13px;
         font-weight: 700;
         color: #0288d1;
     }
@@ -46,24 +45,23 @@ st.markdown("""
     .caja-interactiva {
         background-color: #ffffff;
         border: 1px solid #d4d4d8;
-        border-radius: 6px;
-        padding: 6px;
-        font-size: 12px;
+        border-radius: 5px;
+        padding: 3px 5px;
+        font-size: 11px;
         color: #18181b;
         font-family: monospace;
-        min-height: 32px;
-        margin-bottom: 6px;
+        min-height: 26px;
+        margin-bottom: 3px;
     }
     .caja-activa {
         border: 2px solid #18181b !important;
         background-color: #f4f4f5 !important;
     }
     .caja-label {
-        font-size: 10px;
+        font-size: 9px;
         text-transform: uppercase;
         color: #71717a;
         font-weight: bold;
-        margin-bottom: 2px;
     }
 
     .registro-container {
@@ -72,23 +70,26 @@ st.markdown("""
         align-items: center;
         background-color: #ffffff;
         border: 1px solid #d4d4d8;
-        border-radius: 6px;
-        padding: 6px 10px;
-        margin-bottom: 8px;
-        font-size: 12px;
+        border-radius: 5px;
+        padding: 3px 6px;
+        margin-bottom: 4px;
+        font-size: 11px;
         color: #18181b;
         font-family: monospace;
-        min-height: 34px;
+        min-height: 26px;
     }
     .registro-texto {
         overflow-x: auto;
         white-space: nowrap;
     }
 
-    /* Permitir que las columnas se adapten de forma natural */
+    /* FORZAR FILAS HORIZONTALES EN MÓVIL SIN APILAR EN 1 SOLA COLUMNA */
     div[data-testid="stHorizontalBlock"] {
         display: flex !important;
-        gap: 6px !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        gap: 2px !important;
+        width: 100% !important;
     }
     div[data-testid="column"] {
         flex: 1 1 0px !important;
@@ -98,15 +99,15 @@ st.markdown("""
 
     div.stButton > button {
         width: 100% !important;
-        height: 44px !important;
+        height: 32px !important;
         padding: 0px !important;
-        font-size: 17px !important;
+        font-size: 13px !important;
         font-weight: 700 !important;
         background-color: #ffffff !important;
         color: #111111 !important;
         border: 1px solid #cccccc !important;
-        border-radius: 8px !important;
-        margin-bottom: 2px !important;
+        border-radius: 4px !important;
+        margin: 0px !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -180,7 +181,7 @@ def calcular_agente(historial, calientes_panel, frios_panel):
 
     return sorted(apuesta_fuerte), sorted(cobertura_inercia)
 
-# 4. CONTROLES SUPERIORES (CONTROLES Y VISORES)
+# 4. SELECTOR DE FOCO
 col_sel_cal, col_sel_fri, col_sel_reg = st.columns(3)
 
 with col_sel_cal:
@@ -198,8 +199,8 @@ with col_sel_reg:
         st.session_state.foco = "reg"
         st.rerun()
 
+# 5. VISORES Y GRUPOS
 col_cal_v, col_fri_v = st.columns(2)
-
 clase_cal = "caja-interactiva caja-activa" if st.session_state.foco == "cal" else "caja-interactiva"
 clase_fri = "caja-interactiva caja-activa" if st.session_state.foco == "fri" else "caja-interactiva"
 
@@ -211,9 +212,7 @@ with col_fri_v:
     txt_fri = ", ".join(map(str, st.session_state.frios)) if st.session_state.frios else "Vacío"
     st.markdown(f'<div class="{clase_fri}"><div class="caja-label">Fríos</div><b>{txt_fri}</b></div>', unsafe_allow_html=True)
 
-# 5. GRUPO A Y GRUPO B
 fuerte, cobertura = calcular_agente(st.session_state.historial, st.session_state.calientes, st.session_state.frios)
-
 txt_a = ", ".join(map(str, fuerte)) if fuerte else "—"
 txt_b = ", ".join(map(str, cobertura)) if cobertura else "—"
 
@@ -223,7 +222,7 @@ with col_a:
 with col_b:
     st.markdown(f'<div class="card-discreta"><div class="card-titulo">Grupo B (Cobertura 30%)</div><div class="card-valores-suave">{txt_b}</div></div>', unsafe_allow_html=True)
 
-# 6. HISTORIAL Y BORRADO
+# 6. HISTORIAL Y BORRAR
 col_reg_v, col_del_v = st.columns([0.7, 0.3])
 clase_reg = "registro-container caja-activa" if st.session_state.foco == "reg" else "registro-container"
 
@@ -239,15 +238,15 @@ with col_del_v:
         borrar_ultimo()
         st.rerun()
 
-# 7. TECLADO EN 2 COLUMNAS GRANDES (BOTONES ANCHOS Y ACCESIBLES)
-if st.button("0 (CERO)", key="btn_0", use_container_width=True):
+# 7. TECLADO EN FILAS HORIZONTALES DE 4 EN 4 (1-4, 5-8, 9-12...)
+if st.button("0", key="btn_0", use_container_width=True):
     procesar_numero(0)
     st.rerun()
 
-for fila in range(0, 18):
-    cols = st.columns(2)
-    for col_idx in range(2):
-        num = fila * 2 + col_idx + 1
+for fila in range(0, 9):
+    cols = st.columns(4)
+    for col_idx in range(4):
+        num = fila * 4 + col_idx + 1
         if num <= 36:
             with cols[col_idx]:
                 if st.button(str(num), key=f"btn_{num}"):
