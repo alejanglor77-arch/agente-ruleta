@@ -2,7 +2,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Agente", layout="centered")
 
-# Estilo ultra compacto para evitar scroll
+# CSS para compactar botones nativos y evitar scroll en móvil
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -14,7 +14,6 @@ st.markdown("""
         padding-left: 0.5rem !important;
         padding-right: 0.5rem !important;
     }
-    
     .card-discreta {
         background-color: #f9f9f9;
         border: 1px solid #e0e0e0;
@@ -41,12 +40,7 @@ st.markdown("""
         font-weight: 400;
         color: #555555;
     }
-    
-    /* Visor de registro tipo cinta de calculadora */
-    .registro-container {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+    .registro-box {
         background-color: #f4f4f5;
         border: 1px solid #e4e4e7;
         border-radius: 5px;
@@ -57,77 +51,25 @@ st.markdown("""
         font-family: monospace;
         min-height: 28px;
     }
-    .registro-texto {
-        overflow-x: auto;
-        white-space: nowrap;
-        margin-right: 8px;
-    }
-    .btn-undo {
-        background-color: #e4e4e7;
-        border: 1px solid #d4d4d8;
-        color: #333333;
-        padding: 2px 8px;
-        font-size: 11px;
-        font-weight: bold;
-        border-radius: 4px;
-        text-decoration: none;
-        flex-shrink: 0;
-    }
-    
-    .grid-container {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 3px;
-        width: 100%;
-        box-sizing: border-box;
-    }
-    .btn-zero {
-        grid-column: span 4;
-        background-color: #ffffff;
-        border: 1px solid #dcdcdc;
-        color: #333333;
-        padding: 5px 0;
-        text-align: center;
-        font-weight: 600;
-        font-size: 13px;
-        border-radius: 4px;
-        text-decoration: none;
-        display: block;
-        margin-bottom: 3px;
-    }
-    .btn-num {
-        background-color: #ffffff;
-        border: 1px solid #dcdcdc;
-        color: #333333;
-        padding: 5px 0;
-        text-align: center;
-        font-weight: 600;
-        font-size: 13px;
-        border-radius: 4px;
-        text-decoration: none;
-        display: block;
+    /* Fuerza botones ultracompactos en la cuadrícula */
+    div.stButton > button {
+        width: 100% !important;
+        height: 32px !important;
+        padding: 0px !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        background-color: #ffffff !important;
+        color: #333333 !important;
+        border: 1px solid #dcdcdc !important;
+        border-radius: 4px !important;
+        margin: 0px !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# Estado inicial del historial (persistente)
+# Estado persistente del historial
 if "historial" not in st.session_state:
     st.session_state.historial = []
-
-# Procesar parámetros de URL sin limpiar el historial
-query_params = st.query_params
-
-if "add_num" in query_params:
-    num_pulsado = int(query_params["add_num"])
-    st.session_state.historial.append(num_pulsado)
-    st.query_params.clear()
-    st.rerun()
-
-if "undo" in query_params:
-    if len(st.session_state.historial) > 0:
-        st.session_state.historial.pop()
-    st.query_params.clear()
-    st.rerun()
 
 # Tarjetas superiores sobrias
 col_a, col_b = st.columns(2)
@@ -148,28 +90,32 @@ with col_b:
         </div>
     """, unsafe_allow_html=True)
 
-# Visor estilo cinta de calculadora (muestra la secuencia completa)
-if st.session_state.historial:
-    texto_registro = " - ".join(map(str, st.session_state.historial))
-    st.markdown(f"""
-        <div class="registro-container">
-            <div class="registro-texto"><b>Reg ({len(st.session_state.historial)}):</b> {texto_registro}</div>
-            <a href="?undo=1" target="_self" class="btn-undo">⌫ Borrar</a>
-        </div>
-    """, unsafe_allow_html=True)
-else:
-    st.markdown("""
-        <div class="registro-container" style="color: #999999;">
-            <div class="registro-texto">Reg (0): Sin registros</div>
-        </div>
-    """, unsafe_allow_html=True)
+# Visor de registro e icono de borrado integrado
+col_reg, col_del = st.columns([0.8, 0.2])
 
-# Generación del Teclado Rígido HTML
-html_teclado = '<a href="?add_num=0" target="_self" class="btn-zero">0</a><div class="grid-container">'
+with col_reg:
+    if st.session_state.historial:
+        texto_registro = " - ".join(map(str, st.session_state.historial))
+        st.markdown(f'<div class="registro-box"><b>Reg ({len(st.session_state.historial)}):</b> {texto_registro}</div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="registro-box" style="color: #999999;">Reg (0): Sin registros</div>', unsafe_allow_html=True)
 
-for n in range(1, 37):
-    html_teclado += f'<a href="?add_num={n}" target="_self" class="btn-num">{n}</a>'
+with col_del:
+    if st.button("⌫"):
+        if len(st.session_state.historial) > 0:
+            st.session_state.historial.pop()
+            st.rerun()
 
-html_teclado += "</div>"
+# Botón Cero
+if st.button("0", use_container_width=True):
+    st.session_state.historial.append(0)
+    st.rerun()
 
-st.markdown(html_teclado, unsafe_allow_html=True)
+# Teclado matricial rígido (1 al 36)
+cols = st.columns(4)
+for num in range(1, 37):
+    col_idx = (num - 1) % 4
+    with cols[col_idx]:
+        if st.button(str(num), key=f"btn_{num}"):
+            st.session_state.historial.append(num)
+            st.rerun()
