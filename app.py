@@ -2,7 +2,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Agente Ruleta Express", layout="centered")
 
-# Estilos CSS idénticos a la línea del registro para mantener la estabilidad perfecta
+# Estilos CSS estables e idénticos para mantener la proporción
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -180,42 +180,31 @@ def calcular_agente(historial, calientes_panel, frios_panel):
 
     return sorted(apuesta_fuerte), sorted(cobertura_inercia)
 
-# 4. SELECTOR DE FOCO SUPERIOR
-col_sel_cal, col_sel_fri, col_sel_reg = st.columns(3)
+# --- FLUJO VERTICAL: CALIENTES -> FRÍOS -> REGISTRO ---
 
-with col_sel_cal:
-    if st.button("🔥 Calientes [✓]" if st.session_state.foco == "cal" else "🔥 Calientes", key="btn_foco_cal"):
-        st.session_state.foco = "cal"
-        st.rerun()
+# 1. BLOQUE CALIENTES
+if st.button("🔥 Calientes [✓]" if st.session_state.foco == "cal" else "🔥 Calientes", key="btn_foco_cal", use_container_width=True):
+    st.session_state.foco = "cal"
+    st.rerun()
 
-with col_sel_fri:
-    if st.button("❄️ Fríos [✓]" if st.session_state.foco == "fri" else "❄️ Fríos", key="btn_foco_fri"):
-        st.session_state.foco = "fri"
-        st.rerun()
-
-with col_sel_reg:
-    if st.button("🎲 Registro [✓]" if st.session_state.foco == "reg" else "🎲 Registro", key="btn_foco_reg"):
-        st.session_state.foco = "reg"
-        st.rerun()
-
-# 5. VISORES VERTICALES
 clase_cal = "caja-interactiva caja-activa" if st.session_state.foco == "cal" else "caja-interactiva"
 txt_cal = ", ".join(map(str, st.session_state.calientes)) if st.session_state.calientes else "Vacío"
 st.markdown(f'<div class="{clase_cal}"><div class="caja-label">Calientes</div><b>{txt_cal}</b></div>', unsafe_allow_html=True)
+
+# 2. BLOQUE FRÍOS (JUSTO DEBAJO DE CALIENTES)
+if st.button("❄️ Fríos [✓]" if st.session_state.foco == "fri" else "❄️ Fríos", key="btn_foco_fri", use_container_width=True):
+    st.session_state.foco = "fri"
+    st.rerun()
 
 clase_fri = "caja-interactiva caja-activa" if st.session_state.foco == "fri" else "caja-interactiva"
 txt_fri = ", ".join(map(str, st.session_state.frios)) if st.session_state.frios else "Vacío"
 st.markdown(f'<div class="{clase_fri}"><div class="caja-label">Fríos</div><b>{txt_fri}</b></div>', unsafe_allow_html=True)
 
-# 6. GRUPOS A Y B VERTICALES
-fuerte, cobertura = calcular_agente(st.session_state.historial, st.session_state.calientes, st.session_state.frios)
-txt_a = ", ".join(map(str, fuerte)) if fuerte else "—"
-txt_b = ", ".join(map(str, cobertura)) if cobertura else "—"
+# 3. BLOQUE REGISTRO (JUSTO DEBAJO DE FRÍOS)
+if st.button("🎲 Registro [✓]" if st.session_state.foco == "reg" else "🎲 Registro", key="btn_foco_reg", use_container_width=True):
+    st.session_state.foco = "reg"
+    st.rerun()
 
-st.markdown(f'<div class="card-discreta"><div class="card-titulo">Grupo A (Ataque 70%)</div><div class="card-valores-fuerte">{txt_a}</div></div>', unsafe_allow_html=True)
-st.markdown(f'<div class="card-discreta"><div class="card-titulo">Grupo B (Cobertura 30%)</div><div class="card-valores-suave">{txt_b}</div></div>', unsafe_allow_html=True)
-
-# 7. REGISTRO Y BORRADO
 col_reg_v, col_del_v = st.columns([0.75, 0.25])
 clase_reg = "registro-container caja-activa" if st.session_state.foco == "reg" else "registro-container"
 
@@ -231,7 +220,15 @@ with col_del_v:
         borrar_ultimo()
         st.rerun()
 
-# 8. TECLADO EN 2 COLUMNAS (EXACTAMENTE IGUAL DE PROPORCIONADO QUE LA LÍNEA DEL REGISTRO)
+# --- GRUPOS A Y B ---
+fuerte, cobertura = calcular_agente(st.session_state.historial, st.session_state.calientes, st.session_state.frios)
+txt_a = ", ".join(map(str, fuerte)) if fuerte else "—"
+txt_b = ", ".join(map(str, cobertura)) if cobertura else "—"
+
+st.markdown(f'<div class="card-discreta"><div class="card-titulo">Grupo A (Ataque 70%)</div><div class="card-valores-fuerte">{txt_a}</div></div>', unsafe_allow_html=True)
+st.markdown(f'<div class="card-discreta"><div class="card-titulo">Grupo B (Cobertura 30%)</div><div class="card-valores-suave">{txt_b}</div></div>', unsafe_allow_html=True)
+
+# --- TECLADO EN 2 COLUMNAS (0 AL 36) ---
 if st.button("0", key="btn_0", use_container_width=True):
     procesar_numero(0)
     st.rerun()
