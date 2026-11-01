@@ -2,7 +2,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Agente Ruleta Express", layout="centered")
 
-# CSS para pegar los botones entre sí y eliminar el espacio horizontal sobrante
+# CSS: Cabecera superior intacta + Teclado HTML Grid con ancho 100% estricto
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -12,8 +12,8 @@ st.markdown("""
     .block-container {
         padding-top: 0.3rem !important;
         padding-bottom: 0.3rem !important;
-        padding-left: 0.2rem !important;
-        padding-right: 0.2rem !important;
+        padding-left: 0.3rem !important;
+        padding-right: 0.3rem !important;
     }
 
     .card-discreta {
@@ -84,33 +84,72 @@ st.markdown("""
         white-space: nowrap;
     }
 
-    /* ELIMINACIÓN DE SEPARACIÓN Y MARGEN ENTRE BOTONES (PEGADOS) */
+    /* ESTILOS DE LA CABECERA (3 COLUMNAS SUPERIORES DE STREAMLIT) */
     div[data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
         flex-wrap: nowrap !important;
-        gap: 1px !important; /* Mínimo espacio para pegarlos */
-        margin: 0px !important;
-        padding: 0px !important;
+        gap: 3px !important;
     }
     div[data-testid="column"] {
         flex: 1 1 0px !important;
         min-width: 0px !important;
         padding: 0px !important;
+    }
+
+    /* BOTONES GENERALES DE CABECERA Y BORRADO */
+    div.stButton > button {
+        width: 100% !important;
+        height: 32px !important;
+        padding: 0px !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        background-color: #ffffff !important;
+        color: #333333 !important;
+        border: 1px solid #dcdcdc !important;
+        border-radius: 5px !important;
         margin: 0px !important;
     }
 
-    div.stButton > button {
-        width: 100% !important;
-        height: 34px !important;
-        padding: 0px !important;
-        font-size: 14px !important;
-        font-weight: 700 !important;
-        background-color: #ffffff !important;
-        color: #111111 !important;
-        border: 1px solid #d0d0d0 !important;
-        border-radius: 3px !important;
-        margin: 0px !important;
+    /* TECLADO GRID HTML (BLINDADO CONTRA SCROLL HORIZONTAL) */
+    .teclado-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 2px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        margin-top: 4px;
+    }
+    .btn-num-grid {
+        width: 100%;
+        height: 36px;
+        background-color: #ffffff;
+        color: #111111;
+        border: 1px solid #cccccc;
+        border-radius: 4px;
+        font-size: 14px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        user-select: none;
+    }
+    .btn-zero-grid {
+        grid-column: span 4;
+        height: 36px;
+        background-color: #ffffff;
+        color: #111111;
+        border: 1px solid #cccccc;
+        border-radius: 4px;
+        font-size: 14px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        margin-bottom: 2px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -149,6 +188,17 @@ def borrar_ultimo():
     elif st.session_state.foco == "reg" and st.session_state.historial:
         st.session_state.historial.pop(0)
 
+# Detectar clics provenientes del teclado HTML
+query_params = st.query_params
+if "num" in query_params:
+    try:
+        val = int(query_params["num"])
+        procesar_numero(val)
+        st.query_params.clear()
+        st.rerun()
+    except:
+        st.query_params.clear()
+
 # 3. LÓGICA COMPLETA DEL AGENTE (RUEDA EUROPEA)
 def obtener_vecinos(num, radio=2):
     idx = RUEDA_OFICIAL.index(num)
@@ -184,7 +234,7 @@ def calcular_agente(historial, calientes_panel, frios_panel):
 
     return sorted(apuesta_fuerte), sorted(cobertura_inercia)
 
-# 4. SELECTOR DE FOCO
+# 4. SELECTOR DE FOCO (Calientes, Fríos, Registro)
 col_sel_cal, col_sel_fri, col_sel_reg = st.columns(3)
 
 with col_sel_cal:
@@ -245,17 +295,14 @@ with col_del_v:
         borrar_ultimo()
         st.rerun()
 
-# 8. TECLADO CON BOTONES PEGADOS DE 4 EN 4
-if st.button("0", key="btn_0", use_container_width=True):
-    procesar_numero(0)
-    st.rerun()
+# 8. TECLADO HTML GRID (MATRIZ MATEMÁTICAMENTE AJUSTADA AL 100% SIN SCROLL)
+html_teclado = '<div style="width:100%; box-sizing:border-box;">'
+html_teclado += '<a href="?num=0" target="_self" style="text-decoration:none;"><div class="btn-zero-grid">0</div></a>'
+html_teclado += '<div class="teclado-grid">'
 
-for fila in range(0, 9):
-    cols = st.columns(4)
-    for col_idx in range(4):
-        num = fila * 4 + col_idx + 1
-        if num <= 36:
-            with cols[col_idx]:
-                if st.button(str(num), key=f"btn_{num}"):
-                    procesar_numero(num)
-                    st.rerun()
+for i in range(1, 37):
+    html_teclado += f'<a href="?num={i}" target="_self" style="text-decoration:none;"><div class="btn-num-grid">{i}</div></a>'
+
+html_teclado += '</div></div>'
+
+st.markdown(html_teclado, unsafe_allow_html=True)
