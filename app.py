@@ -2,7 +2,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Agente Ruleta Express", layout="centered")
 
-# Estilos CSS optimizados para una visualización limpia y vertical
+# Estilos CSS con distribución vertical superior y teclado en 2 columnas compactas
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -95,9 +95,9 @@ st.markdown("""
         padding: 0px !important;
     }
 
-    /* BOTONES NUMÉRICOS PEQUEÑOS A LA IZQUIERDA */
+    /* BOTONES NUMÉRICOS EN DOS COLUMNAS COMPACTAS */
     div.stButton > button {
-        width: 60px !important;
+        width: 100% !important;
         height: 28px !important;
         padding: 0px !important;
         font-size: 12px !important;
@@ -231,12 +231,19 @@ with col_del_v:
         borrar_ultimo()
         st.rerun()
 
-# 8. BOTONES SECUENCIALES (VERTICALES A LA IZQUIERDA)
-if st.button("0", key="btn_0"):
+# 8. TECLADO EN 2 COLUMNAS VERTICALES (REDUCE EL SCROLL A LA MITAD)
+if st.button("0 (CERO)", key="btn_0", use_container_width=True):
     procesar_numero(0)
     st.rerun()
 
-for i in range(1, 37):
-    if st.button(str(i), key=f"btn_{i}"):
-        procesar_numero(i)
-        st.rerun()
+for i in range(1, 37, 2):
+    c1, c2 = st.columns(2)
+    with c1:
+        if st.button(str(i), key=f"btn_{i}", use_container_width=True):
+            procesar_numero(i)
+            st.rerun()
+    if i + 1 <= 36:
+        with c2:
+            if st.button(str(i + 1), key=f"btn_{i+1}", use_container_width=True):
+                procesar_numero(i + 1)
+                st.rerun()
