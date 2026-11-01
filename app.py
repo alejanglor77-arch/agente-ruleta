@@ -1,8 +1,9 @@
+import re
 import streamlit as st
 
 st.set_page_config(page_title="Agente", layout="centered")
 
-# CSS para disposición fluida en fila ultra compacta
+# CSS para disposición fluida y tonos discretos
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -16,7 +17,6 @@ st.markdown("""
         padding-right: 0.3rem !important;
     }
     
-    /* Inputs de Calientes y Fríos súper discretos */
     div[data-testid="stTextInput"] {
         margin-bottom: 2px !important;
     }
@@ -31,7 +31,6 @@ st.markdown("""
         color: #777777 !important;
     }
 
-    /* Tarjetas sobrias para Grupo A y B */
     .card-discreta {
         background-color: #f9f9f9;
         border: 1px solid #e0e0e0;
@@ -59,7 +58,6 @@ st.markdown("""
         color: #555555;
     }
 
-    /* Visor de registro con botón de borrar */
     .registro-container {
         display: flex;
         justify-content: space-between;
@@ -80,7 +78,6 @@ st.markdown("""
         margin-right: 6px;
     }
 
-    /* Teclado en modo FILA fluida y compacta */
     .teclado-filas {
         display: flex;
         flex-wrap: wrap;
@@ -90,7 +87,7 @@ st.markdown("""
         margin-top: 4px;
     }
     .btn-num-fila {
-        flex: 1 0 18%; /* Permite 4-5 botones por fila según la pantalla */
+        flex: 1 0 18%;
         max-width: 23%;
         height: 32px;
         background-color: #ffffff;
@@ -110,7 +107,7 @@ st.markdown("""
         flex: 1 0 100%;
         max-width: 100%;
         height: 32px;
-        background-color: #f4f4f5;
+        background-color: #ffffff;
         border: 1px solid #dcdcdc;
         border-radius: 5px;
         color: #18181b;
@@ -124,14 +121,26 @@ st.markdown("""
         margin-bottom: 2px;
         box-sizing: border-box;
     }
+
+    /* Modificadores discretos para resaltados */
+    .btn-caliente {
+        background-color: #fff3e0 !important; /* Calientito tenue */
+        border: 1px solid #ffe0b2 !important;
+        color: #8c4a00 !important;
+    }
+    .btn-frio {
+        background-color: #e3f2fd !important; /* Azul pastel tenue */
+        border: 1px solid #bbdefb !important;
+        color: #0d47a1 !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
-# Estado persistente del historial
+# Estado inicial del historial
 if "historial" not in st.session_state:
     st.session_state.historial = []
 
-# Procesamiento de clicks rápido desde el teclado en fila
+# Captura de pulsaciones de teclado o borrado
 query_params = st.query_params
 
 if "num" in query_params:
@@ -146,12 +155,22 @@ if "del" in query_params:
     st.query_params.clear()
     st.rerun()
 
+# función para extraer números de los inputs de texto
+def parse_numeros(texto):
+    if not texto:
+        return set()
+    nums = re.findall(r'\b\d+\b', texto)
+    return {int(n) for n in nums if 0 <= int(n) <= 36}
+
 # 1. Calientes y Fríos discretos arriba
 col_cal, col_fri = st.columns(2)
 with col_cal:
-    st.text_input("Calientes (opcional)", placeholder="Ej: 3, 17...", key="in_cal")
+    in_calientes = st.text_input("Calientes (opcional)", placeholder="Ej: 3, 17...", key="in_cal")
 with col_fri:
-    st.text_input("Fríos (opcional)", placeholder="Ej: 0, 12...", key="in_fri")
+    in_frios = st.text_input("Fríos (opcional)", placeholder="Ej: 0, 12...", key="in_fri")
+
+set_calientes = parse_numeros(in_calientes)
+set_frios = parse_numeros(in_frios)
 
 # 2. Recomendación principal (Grupo A y Grupo B)
 col_a, col_b = st.columns(2)
@@ -187,12 +206,26 @@ else:
         </div>
     """, unsafe_allow_html=True)
 
-# 4. Teclado compacto organizado por filas adaptables
+# 4. Teclado en filas con resaltado dinámico tenue
 html_teclado = '<div class="teclado-filas">'
-html_teclado += '<a href="?num=0" target="_self" class="btn-zero-fila">0</a>'
+
+# Determinar clase del botón 0
+clase_zero = "btn-zero-fila"
+if 0 in set_calientes:
+    clase_zero += " btn-caliente"
+elif 0 in set_frios:
+    clase_zero += " btn-frio"
+
+html_teclado += f'<a href="?num=0" target="_self" class="{clase_zero}">0</a>'
 
 for n in range(1, 37):
-    html_teclado += f'<a href="?num={n}" target="_self" class="btn-num-fila">{n}</a>'
+    clase_btn = "btn-num-fila"
+    if n in set_calientes:
+        clase_btn += " btn-caliente"
+    elif n in set_frios:
+        clase_btn += " btn-frio"
+    
+    html_teclado += f'<a href="?num={n}" target="_self" class="{clase_btn}">{n}</a>'
 
 html_teclado += '</div>'
 
