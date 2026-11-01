@@ -2,7 +2,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Agente", layout="centered")
 
-# Estilo discreto
+# Estilo base
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -149,7 +149,7 @@ with col_fri_v:
     txt_fri = ", ".join(map(str, st.session_state.frios)) if st.session_state.frios else "Vacío"
     st.markdown(f'<div class="caja-interactiva {"caja-activa" if st.session_state.foco == "fri" else ""}"><b>Fríos:</b> {txt_fri}</div>', unsafe_allow_html=True)
 
-# Tarjetas completamente limpias (SIN NÚMEROS FIJOS)
+# Tarjetas limpias
 col_a, col_b = st.columns(2)
 with col_a:
     st.markdown('<div class="card-discreta"><div class="card-titulo">Grupo A</div><div class="card-valores">—</div></div>', unsafe_allow_html=True)
@@ -167,13 +167,27 @@ with col_del_v:
         borrar_ultimo()
         st.rerun()
 
-# Colores en botones nativos
+# GENERADOR DINÁMICO DE COLORES TENUES PARA EL TECLADO
 css_colores = "<style>"
 for n in range(37):
     if n in st.session_state.calientes:
-        css_colores += f"div.stButton > button[key='btn_{n}'] {{ background-color: #fff3e0 !important; border: 1px solid #ffe0b2 !important; color: #8c4a00 !important; font-weight: bold !important; }}"
+        css_colores += f"""
+            div.stButton > button[key='btn_{n}'] {{
+                background-color: #fff3e0 !important;
+                border: 1px solid #ffe0b2 !important;
+                color: #8c4a00 !important;
+                font-weight: bold !important;
+            }}
+        """
     elif n in st.session_state.frios:
-        css_colores += f"div.stButton > button[key='btn_{n}'] {{ background-color: #e3f2fd !important; border: 1px solid #bbdefb !important; color: #0d47a1 !important; font-weight: bold !important; }}"
+        css_colores += f"""
+            div.stButton > button[key='btn_{n}'] {{
+                background-color: #e3f2fd !important;
+                border: 1px solid #bbdefb !important;
+                color: #0d47a1 !important;
+                font-weight: bold !important;
+            }}
+        """
 css_colores += "</style>"
 st.markdown(css_colores, unsafe_allow_html=True)
 
