@@ -3,9 +3,9 @@ import json
 import os
 from datetime import datetime
 
-st.set_page_config(page_title="Agente Ruleta Express Pro Multisede", layout="centered")
+st.set_page_config(page_title="Agente Ruleta Express Pro Sectores", layout="centered")
 
-# Estilos CSS optimizados para iPhone 12
+# Estilos CSS optimizados para iPhone 12 y visualización de sectores continuos
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -23,26 +23,29 @@ st.markdown("""
         background-color: #f9f9f9;
         border: 1px solid #e0e0e0;
         border-radius: 6px;
-        padding: 4px 6px;
+        padding: 6px 8px;
         text-align: left;
         color: #4a4a4a;
-        margin-bottom: 3px;
+        margin-bottom: 4px;
     }
     .card-titulo {
         font-size: 9px;
         text-transform: uppercase;
         color: #888888;
         font-weight: bold;
+        margin-bottom: 2px;
     }
     .card-valores-fuerte {
-        font-size: 13px;
+        font-size: 14px;
         font-weight: 800;
         color: #d32f2f;
+        letter-spacing: 0.5px;
     }
     .card-valores-suave {
-        font-size: 12px;
+        font-size: 13px;
         font-weight: 700;
         color: #0288d1;
+        letter-spacing: 0.5px;
     }
 
     .caja-interactiva {
@@ -98,6 +101,16 @@ st.markdown("""
         overflow-y: auto;
     }
 
+    .alerta-ia {
+        background-color: #eff6ff;
+        border: 1px solid #3b82f6;
+        border-radius: 6px;
+        padding: 6px 8px;
+        font-size: 11px;
+        color: #1e40af;
+        margin-bottom: 4px;
+    }
+
     div[data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
@@ -125,7 +138,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 1. DISPOSICIÓN FÍSICA REAL DE LA RULETA EUROPEA
+# 1. DISPOSICIÓN FÍSICA REAL DE LA RULETA EUROPEA (CILINDRO OFICIAL)
 RUEDA_OFICIAL = [
     0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10,
     5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26
@@ -196,10 +209,14 @@ def borrar_ultimo():
     elif st.session_state.foco == "reg" and st.session_state.historial:
         st.session_state.historial.pop(0)
 
-# 4. CEREBRO ADAPTATIVO
+# 4. CEREBRO ADAPTATIVO CON ORDENACIÓN POR SECTORES FÍSICOS CONTINUOS
 def obtener_vecinos(num, radio=3):
     idx = RUEDA_OFICIAL.index(num)
     return [RUEDA_OFICIAL[(idx + i) % len(RUEDA_OFICIAL)] for i in range(-radio, radio + 1)]
+
+def ordenar_por_rueda(lista_numeros):
+    """Ordena una lista de números según su posición física estricta en el cilindro."""
+    return [n for n in RUEDA_OFICIAL if n in lista_numeros]
 
 def calcular_agente(historial, calientes_panel, frios_panel):
     if len(historial) < 2 and not calientes_panel:
@@ -245,16 +262,19 @@ def calcular_agente(historial, calientes_panel, frios_panel):
         if len(apuesta_fuerte) < 5 or (len(apuesta_fuerte) < 8 and puntuaciones[n] >= max_score * 0.6):
             apuesta_fuerte.append(n)
 
-    apuesta_fuerte_ordenada_rueda = [n for n in RUEDA_OFICIAL if n in apuesta_fuerte]
+    # Coherencia física: Ordenar el ataque fuerte estrictamente en el orden del cilindro
+    apuesta_fuerte_ordenada = ordenar_por_rueda(apuesta_fuerte)
 
+    # Cobertura de inercia contigua sin huecos alrededor del último número registrado
     ultimo_num = historial[0] if historial else (calientes_panel[0] if calientes_panel else 0)
-    cobertura_inercia = [n for n in obtener_vecinos(ultimo_num, radio=3) if n not in apuesta_fuerte]
+    vecinos_amplios = obtener_vecinos(ultimo_num, radio=4)
+    cobertura_inercia = [n for n in vecinos_amplios if n not in apuesta_fuerte]
+    cobertura_ordenada = ordenar_por_rueda(cobertura_inercia)
 
-    return apuesta_fuerte_ordenada_rueda, sorted(cobertura_inercia)
+    return apuesta_fuerte_ordenada, cobertura_ordenada
 
 # --- INTERFAZ VERTICAL ---
 
-# CAMPO DE TEXTO DISCRETO PARA ETIQUETAR LA SEDE / MESA
 sede_actual = st.text_input("📍 Sede / Mesa actual:", value="Online / Salón", placeholder="Ej. Centro Comercial, Online...", label_visibility="collapsed")
 
 # 1. BLOQUE CALIENTES
@@ -320,7 +340,7 @@ with col_del_v:
         else:
             st.button("📥", disabled=True, help="Vacío")
 
-# --- VISOR DESPLEGABLE DEL LIBRO DE BITÁCORA CON SEDES ---
+# --- VISOR DESPLEGABLE DEL LIBRO DE BITÁCORA ---
 if st.session_state.ver_bitacora:
     bitacora_datos = cargar_bitacora()
     st.markdown('<div class="bitacora-visor"><b>📖 LIBRO DE BITÁCORA (MULTISEDE):</b><br>', unsafe_allow_html=True)
@@ -335,13 +355,30 @@ if st.session_state.ver_bitacora:
         st.markdown("<i>Aún no hay sesiones guardadas. Pulsa 💾 al terminar una partida.</i>", unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-# --- GRUPOS A Y B ---
-fuerte, cobertura = calcular_agente(st.session_state.historial, st.session_state.calientes, st.session_state.frios)
-txt_a = ", ".join(map(str, fuerte)) if fuerte else "—"
-txt_b = ", ".join(map(str, cobertura)) if cobertura else "—"
+# --- CONTROL DE ALERTA NEURONAL ---
+bitacora_check = cargar_bitacora()
+if len(bitacora_check) >= 999:
+    st.markdown("""
+        <div class="alerta-ia">
+            <b>🧠 ALERTA NEURONAL DEL AGENTE (DIAGNÓSTICO):</b><br>
+            Analizadas las sesiones de la bitácora, propongo ajustar el parámetro del algoritmo.<br>
+            👉 <b>Instrucción:</b> Ve a la función <code>calcular_agente()</code>.
+        </div>
+    """, unsafe_allow_html=True)
+    with st.expander("🛠️ Ver Instrucciones de Borrado y Sustitución"):
+        st.markdown("""
+        * **Paso 1:** Busca esta línea exacta en tu código:
+          `score += sum(conteo_historico_global[v] * 0.05 for v in vecinos_cercanos)`
+        * **Paso 2:** Bórrala y cámbiala por la nueva propuesta.
+        """)
 
-st.markdown(f'<div class="card-discreta"><div class="card-titulo">Grupo A (Ataque Continuo IA)</div><div class="card-valores-fuerte">{txt_a}</div></div>', unsafe_allow_html=True)
-st.markdown(f'<div class="card-discreta"><div class="card-titulo">Grupo B (Cobertura Sólida Rebote)</div><div class="card-valores-suave">{txt_b}</div></div>', unsafe_allow_html=True)
+# --- GRUPOS A Y B (ORDENADOS POR RUEDA FÍSICA SIN HUECOS) ---
+fuerte, cobertura = calcular_agente(st.session_state.historial, st.session_state.calientes, st.session_state.frios)
+txt_a = " - ".join(map(str, fuerte)) if fuerte else "—"
+txt_b = " - ".join(map(str, cobertura)) if cobertura else "—"
+
+st.markdown(f'<div class="card-discreta"><div class="card-titulo">Grupo A (Ataque Sectorial IA - Orden Rueda)</div><div class="card-valores-fuerte">{txt_a}</div></div>', unsafe_allow_html=True)
+st.markdown(f'<div class="card-discreta"><div class="card-titulo">Grupo B (Cobertura Sólida Contigua - Sin Huecos)</div><div class="card-valores-suave">{txt_b}</div></div>', unsafe_allow_html=True)
 
 # --- TECLADO EN 2 COLUMNAS (0 AL 36) ---
 if st.button("0", key="btn_0", use_container_width=True):
