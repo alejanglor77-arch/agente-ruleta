@@ -2,7 +2,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Agente", layout="centered")
 
-# Estilo para filas fluidas en el teclado y cero scroll lateral
+# Estilo discreto y compacto
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -43,6 +43,7 @@ st.markdown("""
         color: #555555;
     }
 
+    /* Indicadores visuales de foco */
     .caja-interactiva {
         background-color: #ffffff;
         border: 1px solid #d4d4d8;
@@ -86,66 +87,36 @@ st.markdown("""
         margin-right: 6px;
     }
 
-    /* Teclado en FILAS adaptables sin columnas nativas */
-    .teclado-filas {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 4px;
-        justify-content: center;
-        width: 100%;
-        margin-top: 4px;
+    /* Ajuste para mantener 4 columnas juntas */
+    div[data-testid="stHorizontalBlock"] {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        gap: 3px !important;
     }
-    .btn-num-fila {
-        flex: 1 0 18%;
-        max-width: 23%;
-        height: 32px;
-        background-color: #ffffff;
-        border: 1px solid #dcdcdc;
-        border-radius: 5px;
-        color: #333333;
-        font-weight: 600;
-        font-size: 13px;
-        text-align: center;
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-sizing: border-box;
-    }
-    .btn-zero-fila {
-        flex: 1 0 100%;
-        max-width: 100%;
-        height: 32px;
-        background-color: #ffffff;
-        border: 1px solid #dcdcdc;
-        border-radius: 5px;
-        color: #18181b;
-        font-weight: 700;
-        font-size: 14px;
-        text-align: center;
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 2px;
-        box-sizing: border-box;
+    div[data-testid="column"] {
+        flex: 1 1 0px !important;
+        min-width: 0px !important;
+        padding: 0px !important;
     }
 
-    /* Sombreado tenue para calientes y fríos */
-    .btn-caliente {
-        background-color: #fff3e0 !important;
-        border: 1px solid #ffe0b2 !important;
-        color: #8c4a00 !important;
-    }
-    .btn-frio {
-        background-color: #e3f2fd !important;
-        border: 1px solid #bbdefb !important;
-        color: #0d47a1 !important;
+    /* Estilo de botones nativos compactos */
+    div.stButton > button {
+        width: 100% !important;
+        height: 32px !important;
+        padding: 0px !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        background-color: #ffffff !important;
+        color: #333333 !important;
+        border: 1px solid #dcdcdc !important;
+        border-radius: 5px !important;
+        margin: 0px !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# 1. Estado persistente del servidor (INTACTO)
+# 1. Estado persistente del servidor
 if "historial" not in st.session_state:
     st.session_state.historial = []
 if "calientes" not in st.session_state:
@@ -155,11 +126,8 @@ if "frios" not in st.session_state:
 if "foco" not in st.session_state:
     st.session_state.foco = "reg"
 
-# Procesamiento de pulsaciones
-query_params = st.query_params
-
-if "press" in query_params:
-    num = int(query_params["press"])
+# Funciones de procesamiento
+def procesar_numero(num):
     if st.session_state.foco == "cal":
         if num not in st.session_state.calientes and len(st.session_state.calientes) < 5:
             st.session_state.calientes.append(num)
@@ -168,15 +136,8 @@ if "press" in query_params:
             st.session_state.frios.append(num)
     else:
         st.session_state.historial.append(num)
-    st.query_params.clear()
-    st.rerun()
 
-if "foco_act" in query_params:
-    st.session_state.foco = query_params["foco_act"]
-    st.query_params.clear()
-    st.rerun()
-
-if "del_act" in query_params:
+def borrar_ultimo():
     if st.session_state.foco == "cal":
         if st.session_state.calientes:
             st.session_state.calientes.pop()
@@ -186,10 +147,8 @@ if "del_act" in query_params:
     else:
         if st.session_state.historial:
             st.session_state.historial.pop()
-    st.query_params.clear()
-    st.rerun()
 
-# 2. Selector de Cajetín superior (INTACTO)
+# 2. Selección de cajetín mediante botones nativos
 col_sel_cal, col_sel_fri, col_sel_reg = st.columns(3)
 
 with col_sel_cal:
@@ -210,7 +169,7 @@ with col_sel_reg:
         st.session_state.foco = "reg"
         st.rerun()
 
-# 3. Visores interactivos (INTACTO)
+# 3. Visores interactivos
 col_cal_v, col_fri_v = st.columns(2)
 
 clase_cal = "caja-interactiva caja-activa" if st.session_state.foco == "cal" else "caja-interactiva"
@@ -224,14 +183,14 @@ with col_fri_v:
     txt_fri = ", ".join(map(str, st.session_state.frios)) if st.session_state.frios else "Vacío"
     st.markdown(f'<div class="{clase_fri}"><div class="caja-label">Fríos (máx 5)</div><b>{txt_fri}</b></div>', unsafe_allow_html=True)
 
-# Tarjetas del Grupo A y B (INTACTO)
+# Tarjetas del Grupo A y B
 col_a, col_b = st.columns(2)
 with col_a:
     st.markdown('<div class="card-discreta"><div class="card-titulo">Grupo A</div><div class="card-valores-fuerte">3, 20, 35</div></div>', unsafe_allow_html=True)
 with col_b:
     st.markdown('<div class="card-discreta"><div class="card-titulo">Grupo B</div><div class="card-valores-suave">9, 22, 31</div></div>', unsafe_allow_html=True)
 
-# Visor de Registro y Borrado (INTACTO)
+# Visor de Registro y Borrado
 col_reg_v, col_del_v = st.columns([0.75, 0.25])
 
 clase_reg = "registro-container caja-activa" if st.session_state.foco == "reg" else "registro-container"
@@ -245,36 +204,35 @@ with col_reg_v:
 
 with col_del_v:
     if st.button("⌫ Borrar", key="btn_del_main"):
-        if st.session_state.foco == "cal" and st.session_state.calientes:
-            st.session_state.calientes.pop()
-        elif st.session_state.foco == "fri" and st.session_state.frios:
-            st.session_state.frios.pop()
-        elif st.session_state.foco == "reg" and st.session_state.historial:
-            st.session_state.historial.pop()
+        borrar_ultimo()
         st.rerun()
 
-# 4. Teclado en FILAS FLUIDAS (Adaptable para iPhone 12)
-html_teclado = '<div class="teclado-filas">'
-
-# Botón 0
-clase_zero = "btn-zero-fila"
+# Dynamic Styling Script para colorear botones de calientes y fríos
+css_colores = "<style>"
 if 0 in st.session_state.calientes:
-    clase_zero += " btn-caliente"
+    css_colores += "div.stButton > button[key='btn_0'] { background-color: #fff3e0 !important; border: 1px solid #ffe0b2 !important; color: #8c4a00 !important; }"
 elif 0 in st.session_state.frios:
-    clase_zero += " btn-frio"
+    css_colores += "div.stButton > button[key='btn_0'] { background-color: #e3f2fd !important; border: 1px solid #bbdefb !important; color: #0d47a1 !important; }"
 
-html_teclado += f'<a href="?press=0" target="_self" class="{clase_zero}">0</a>'
+for num in range(1, 37):
+    if num in st.session_state.calientes:
+        css_colores += f"div.stButton > button[key='btn_{num}'] {{ background-color: #fff3e0 !important; border: 1px solid #ffe0b2 !important; color: #8c4a00 !important; }}"
+    elif num in st.session_state.frios:
+        css_colores += f"div.stButton > button[key='btn_{num}'] {{ background-color: #e3f2fd !important; border: 1px solid #bbdefb !important; color: #0d47a1 !important; }}"
+css_colores += "</style>"
+st.markdown(css_colores, unsafe_allow_html=True)
 
-# Botones del 1 al 36 dispuestos en filas
-for n in range(1, 37):
-    clase_btn = "btn-num-fila"
-    if n in st.session_state.calientes:
-        clase_btn += " btn-caliente"
-    elif n in st.session_state.frios:
-        clase_btn += " btn-frio"
-    
-    html_teclado += f'<a href="?press={n}" target="_self" class="{clase_btn}">{n}</a>'
+# 4. Teclado funcional
+if st.button("0", key="btn_0", use_container_width=True):
+    procesar_numero(0)
+    st.rerun()
 
-html_teclado += '</div>'
-
-st.markdown(html_teclado, unsafe_allow_html=True)
+for fila in range(0, 9):
+    cols = st.columns(4)
+    for col_idx in range(4):
+        num = fila * 4 + col_idx + 1
+        if num <= 36:
+            with cols[col_idx]:
+                if st.button(str(num), key=f"btn_{num}"):
+                    procesar_numero(num)
+                    st.rerun()
