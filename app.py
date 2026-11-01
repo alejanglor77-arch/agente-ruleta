@@ -2,7 +2,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Agente Ruleta Express", layout="centered")
 
-# Estilo para pantalla sin scroll en iPhone 12 (Diseño validado intacto)
+# Estilo optimizado para iPhone 12 en 3 columnas (Teclado ancho y legible)
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -32,12 +32,12 @@ st.markdown("""
         margin-bottom: 1px;
     }
     .card-valores-fuerte {
-        font-size: 14px;
+        font-size: 15px;
         font-weight: 800;
         color: #d32f2f;
     }
     .card-valores-suave {
-        font-size: 13px;
+        font-size: 14px;
         font-weight: 700;
         color: #0288d1;
     }
@@ -88,7 +88,7 @@ st.markdown("""
         display: flex !important;
         flex-direction: row !important;
         flex-wrap: nowrap !important;
-        gap: 3px !important;
+        gap: 4px !important;
     }
     div[data-testid="column"] {
         flex: 1 1 0px !important;
@@ -98,14 +98,14 @@ st.markdown("""
 
     div.stButton > button {
         width: 100% !important;
-        height: 32px !important;
+        height: 36px !important;
         padding: 0px !important;
-        font-size: 13px !important;
-        font-weight: 600 !important;
+        font-size: 15px !important;
+        font-weight: 700 !important;
         background-color: #ffffff !important;
-        color: #333333 !important;
-        border: 1px solid #dcdcdc !important;
-        border-radius: 5px !important;
+        color: #111111 !important;
+        border: 1px solid #cccccc !important;
+        border-radius: 6px !important;
         margin: 0px !important;
     }
     </style>
@@ -145,7 +145,7 @@ def borrar_ultimo():
     elif st.session_state.foco == "reg" and st.session_state.historial:
         st.session_state.historial.pop(0)
 
-# 3. LÓGICA COMPLETA DEL AGENTE (MATEMÁTICA Y SECTORES ORIGINALES)
+# 3. INTELIGENCIA MATEMÁTICA Y SECTORES DEL AGENTE
 def obtener_vecinos(num, radio=2):
     idx = RUEDA_OFICIAL.index(num)
     return [RUEDA_OFICIAL[(idx + i) % len(RUEDA_OFICIAL)] for i in range(-radio, radio + 1)]
@@ -180,7 +180,7 @@ def calcular_agente(historial, calientes_panel, frios_panel):
 
     return sorted(apuesta_fuerte), sorted(cobertura_inercia)
 
-# 4. SELECTOR DE FOCO (Checks superiores)
+# 4. SELECTOR DE FOCO (Calientes, Fríos, Registro)
 col_sel_cal, col_sel_fri, col_sel_reg = st.columns(3)
 
 with col_sel_cal:
@@ -198,7 +198,7 @@ with col_sel_reg:
         st.session_state.foco = "reg"
         st.rerun()
 
-# 5. VISORES INTERACTIVOS
+# 5. VISORES DE ESTADO
 col_cal_v, col_fri_v = st.columns(2)
 
 clase_cal = "caja-interactiva caja-activa" if st.session_state.foco == "cal" else "caja-interactiva"
@@ -212,7 +212,7 @@ with col_fri_v:
     txt_fri = ", ".join(map(str, st.session_state.frios)) if st.session_state.frios else "Vacío"
     st.markdown(f'<div class="{clase_fri}"><div class="caja-label">Fríos</div><b>{txt_fri}</b></div>', unsafe_allow_html=True)
 
-# 6. EVALUACIÓN Y MOSTRADO DE GRUPO A Y GRUPO B
+# 6. MOSTRADO DE SUGERENCIAS (GRUPO A Y B)
 fuerte, cobertura = calcular_agente(st.session_state.historial, st.session_state.calientes, st.session_state.frios)
 
 txt_a = ", ".join(map(str, fuerte)) if fuerte else "—"
@@ -224,9 +224,8 @@ with col_a:
 with col_b:
     st.markdown(f'<div class="card-discreta"><div class="card-titulo">Grupo B (Cobertura 30%)</div><div class="card-valores-suave">{txt_b}</div></div>', unsafe_allow_html=True)
 
-# 7. VISOR DE REGISTRO Y BORRADO
+# 7. VISOR DE HISTORIAL Y BOTÓN BORRAR
 col_reg_v, col_del_v = st.columns([0.75, 0.25])
-
 clase_reg = "registro-container caja-activa" if st.session_state.foco == "reg" else "registro-container"
 
 with col_reg_v:
@@ -241,15 +240,15 @@ with col_del_v:
         borrar_ultimo()
         st.rerun()
 
-# 8. TECLADO NATIVO ESTABLE
+# 8. TECLADO EN 3 COLUMNAS ANCHAS (ESTILO TELÉFONO)
 if st.button("0", key="btn_0", use_container_width=True):
     procesar_numero(0)
     st.rerun()
 
-for fila in range(0, 9):
-    cols = st.columns(4)
-    for col_idx in range(4):
-        num = fila * 4 + col_idx + 1
+for fila in range(0, 12):
+    cols = st.columns(3)
+    for col_idx in range(3):
+        num = fila * 3 + col_idx + 1
         if num <= 36:
             with cols[col_idx]:
                 if st.button(str(num), key=f"btn_{num}"):
