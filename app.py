@@ -2,7 +2,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Agente Ruleta Express", layout="centered")
 
-# Estilos CSS estables e idénticos
+# Estilos CSS limpios y estables de la versión anterior
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -179,18 +179,23 @@ def calcular_agente(historial, calientes_panel, frios_panel):
 
     return sorted(apuesta_fuerte), sorted(cobertura_inercia)
 
-# 4. SELECTORES DE FOCO EN VERTICAL (Calientes -> Fríos -> Registro)
-if st.button("🔥 Calientes [✓]" if st.session_state.foco == "cal" else "🔥 Calientes", key="btn_foco_cal", use_container_width=True):
-    st.session_state.foco = "cal"
-    st.rerun()
+# 4. SELECTORES DE FOCO SUPERIOR (BOTONES SEPARADOS)
+col_sel_cal, col_sel_fri, col_sel_reg = st.columns(3)
 
-if st.button("❄️ Fríos [✓]" if st.session_state.foco == "fri" else "❄️ Fríos", key="btn_foco_fri", use_container_width=True):
-    st.session_state.foco = "fri"
-    st.rerun()
+with col_sel_cal:
+    if st.button("🔥 Calientes [✓]" if st.session_state.foco == "cal" else "🔥 Calientes", key="btn_foco_cal"):
+        st.session_state.foco = "cal"
+        st.rerun()
 
-if st.button("🎲 Registro [✓]" if st.session_state.foco == "reg" else "🎲 Registro", key="btn_foco_reg", use_container_width=True):
-    st.session_state.foco = "reg"
-    st.rerun()
+with col_sel_fri:
+    if st.button("❄️ Fríos [✓]" if st.session_state.foco == "fri" else "❄️ Fríos", key="btn_foco_fri"):
+        st.session_state.foco = "fri"
+        st.rerun()
+
+with col_sel_reg:
+    if st.button("🎲 Registro [✓]" if st.session_state.foco == "reg" else "🎲 Registro", key="btn_foco_reg"):
+        st.session_state.foco = "reg"
+        st.rerun()
 
 # 5. VISORES VERTICALES (CALIENTES Y FRÍOS)
 clase_cal = "caja-interactiva caja-activa" if st.session_state.foco == "cal" else "caja-interactiva"
