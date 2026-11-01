@@ -2,7 +2,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Agente", layout="centered")
 
-# Estilo discreto sin colores llamativos
+# Estilo discreto y control de columnas en móvil
 st.markdown("""
     <style>
     /* Estilo tenue para las tarjetas */
@@ -10,25 +10,25 @@ st.markdown("""
         background-color: #f9f9f9;
         border: 1px solid #e0e0e0;
         border-radius: 8px;
-        padding: 12px;
+        padding: 10px;
         text-align: center;
         color: #4a4a4a;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
     }
     .card-titulo {
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 1px;
         color: #888888;
-        margin-bottom: 4px;
+        margin-bottom: 2px;
     }
     .card-valores-fuerte {
-        font-size: 19px;
+        font-size: 18px;
         font-weight: 800;
         color: #1a1a1a;
     }
     .card-valores-suave {
-        font-size: 17px;
+        font-size: 16px;
         font-weight: 400;
         color: #555555;
     }
@@ -36,21 +36,28 @@ st.markdown("""
     .registro-box {
         background-color: #f4f4f5;
         border-radius: 6px;
-        padding: 8px 12px;
-        font-size: 13px;
+        padding: 6px 10px;
+        font-size: 12px;
         color: #333333;
-        margin-bottom: 15px;
+        margin-bottom: 10px;
         font-family: monospace;
     }
-    /* Botones compactos y neutros */
+    /* Forzar que las columnas de Streamlit NO se apilen en móvil */
+    [data-testid="column"] {
+        width: 23% !important;
+        flex: 1 1 23% !important;
+        min-width: 23% !important;
+    }
+    /* Botones ultrapactos para encajar en la pantalla del iPhone */
     div.stButton > button {
-        width: 100%;
-        padding: 8px 0px;
-        font-size: 15px;
-        font-weight: 500;
-        background-color: #ffffff;
-        color: #333333;
-        border: 1px solid #dcdcdc;
+        width: 100% !important;
+        padding: 4px 0px !important;
+        font-size: 14px !important;
+        font-weight: 500 !important;
+        background-color: #ffffff !important;
+        color: #333333 !important;
+        border: 1px solid #dcdcdc !important;
+        margin: 0px !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -78,7 +85,7 @@ with col_b:
         </div>
     """, unsafe_allow_html=True)
 
-# MUESTRA DE REGISTRO EN TIEMPO REAL (Justo antes del teclado)
+# MUESTRA DE REGISTRO EN TIEMPO REAL
 if st.session_state.historial:
     ultimos = st.session_state.historial[-20:]
     texto_registro = " - ".join(map(str, ultimos))
@@ -94,13 +101,11 @@ else:
         </div>
     """, unsafe_allow_html=True)
 
-st.divider()
-
 # Botón Cero arriba
 if st.button("0", use_container_width=True):
     st.session_state.historial.append(0)
 
-# Teclado compacto ordenado (1 al 36) en 4 columnas
+# Teclado compacto ordenado (1 al 36) en 4 columnas obligatorias
 cols = st.columns(4)
 for num in range(1, 37):
     col_idx = (num - 1) % 4
