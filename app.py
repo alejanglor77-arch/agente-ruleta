@@ -2,44 +2,51 @@ import streamlit as st
 
 st.set_page_config(page_title="Agente", layout="centered")
 
-# Estilo compacto para encajar 4 columnas en iPhone 12 sin desplazamiento
+# Inyección de Viewport y CSS para ajustar la pantalla completa en móviles
 st.markdown("""
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
     footer {visibility: hidden;}
+    
+    /* Contenedor principal sin márgenes que generen desplazamiento */
     .block-container {
-        padding-top: 0.4rem !important;
+        padding-top: 0.3rem !important;
         padding-bottom: 0rem !important;
-        padding-left: 0.3rem !important;
-        padding-right: 0.3rem !important;
+        padding-left: 0.2rem !important;
+        padding-right: 0.2rem !important;
+        max-width: 100% !important;
     }
+    
+    /* Tarjetas y cajetines compactos */
     .card-discreta {
         background-color: #f9f9f9;
         border: 1px solid #e0e0e0;
         border-radius: 6px;
-        padding: 5px;
+        padding: 4px;
         text-align: center;
         color: #4a4a4a;
-        margin-bottom: 4px;
+        margin-bottom: 3px;
     }
     .card-titulo {
-        font-size: 10px;
+        font-size: 9px;
         text-transform: uppercase;
-        letter-spacing: 1px;
+        letter-spacing: 0.5px;
         color: #888888;
         margin-bottom: 1px;
     }
     .card-valores-fuerte {
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 800;
         color: #1a1a1a;
     }
     .card-valores-suave {
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 400;
         color: #555555;
     }
+    
     .registro-container {
         display: flex;
         justify-content: space-between;
@@ -47,36 +54,39 @@ st.markdown("""
         background-color: #f4f4f5;
         border: 1px solid #e4e4e7;
         border-radius: 5px;
-        padding: 4px 6px;
-        margin-bottom: 4px;
+        padding: 3px 5px;
+        margin-bottom: 3px;
         font-size: 11px;
         color: #18181b;
         font-family: monospace;
-        min-height: 26px;
+        min-height: 24px;
     }
     .registro-texto {
         overflow-x: auto;
         white-space: nowrap;
-        margin-right: 6px;
+        margin-right: 4px;
     }
-    /* Reducción de separaciones para encajar 4 columnas en el ancho del teléfono */
+
+    /* Regla rígida de 4 columnas distribuidas proporcionalmente dentro del ancho del teléfono */
     div[data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
         flex-wrap: nowrap !important;
         gap: 2px !important;
+        width: 100% !important;
     }
     div[data-testid="column"] {
-        width: 100% !important;
-        min-width: 0px !important;
         flex: 1 1 0px !important;
+        min-width: 0px !important;
         padding: 0px !important;
     }
+    
+    /* Botones ajustados al ancho estricto de cada columna */
     div.stButton > button {
         width: 100% !important;
-        height: 30px !important;
+        height: 28px !important;
         padding: 0px !important;
-        font-size: 12px !important;
+        font-size: 11px !important;
         font-weight: 600 !important;
         background-color: #ffffff !important;
         color: #333333 !important;
@@ -84,10 +94,16 @@ st.markdown("""
         border-radius: 4px !important;
         margin: 0px !important;
     }
+    
+    /* Inputs de calientes y fríos ultra compactos */
     div[data-testid="stTextInput"] input {
-        height: 28px !important;
-        padding: 2px 6px !important;
-        font-size: 11px !important;
+        height: 26px !important;
+        padding: 2px 4px !important;
+        font-size: 10px !important;
+    }
+    div[data-testid="stTextInput"] label {
+        font-size: 10px !important;
+        margin-bottom: 0px !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -143,7 +159,7 @@ if st.button("0", key="btn_0", use_container_width=True):
     st.session_state.historial.append(0)
     st.rerun()
 
-# Teclado ajustado a 4 columnas compactas en iPhone 12
+# Teclado en 4 columnas encajadas proporcionalmente
 for fila in range(0, 9):
     cols = st.columns(4)
     for col_idx in range(4):
