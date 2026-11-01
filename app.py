@@ -2,7 +2,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Agente Ruleta Express", layout="centered")
 
-# Estilos CSS originales y limpios para la parte superior validada
+# Estilos CSS limpios y compactos (cabecera intacta + botones verticales pequeños)
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -10,8 +10,8 @@ st.markdown("""
     footer {visibility: hidden;}
     
     .block-container {
-        padding-top: 0.3rem !important;
-        padding-bottom: 0.3rem !important;
+        padding-top: 0.2rem !important;
+        padding-bottom: 0.2rem !important;
         padding-left: 0.3rem !important;
         padding-right: 0.3rem !important;
     }
@@ -20,24 +20,24 @@ st.markdown("""
         background-color: #f9f9f9;
         border: 1px solid #e0e0e0;
         border-radius: 6px;
-        padding: 5px;
+        padding: 4px;
         text-align: center;
         color: #4a4a4a;
-        margin-bottom: 4px;
+        margin-bottom: 3px;
     }
     .card-titulo {
-        font-size: 10px;
+        font-size: 9px;
         text-transform: uppercase;
         color: #888888;
         margin-bottom: 1px;
     }
     .card-valores-fuerte {
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 800;
         color: #d32f2f;
     }
     .card-valores-suave {
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 700;
         color: #0288d1;
     }
@@ -46,12 +46,12 @@ st.markdown("""
         background-color: #ffffff;
         border: 1px solid #d4d4d8;
         border-radius: 5px;
-        padding: 4px 6px;
+        padding: 3px 5px;
         font-size: 11px;
         color: #18181b;
         font-family: monospace;
-        min-height: 28px;
-        margin-bottom: 4px;
+        min-height: 26px;
+        margin-bottom: 3px;
     }
     .caja-activa {
         border: 2px solid #18181b !important;
@@ -72,12 +72,12 @@ st.markdown("""
         background-color: #ffffff;
         border: 1px solid #d4d4d8;
         border-radius: 5px;
-        padding: 4px 8px;
-        margin-bottom: 6px;
+        padding: 3px 6px;
+        margin-bottom: 4px;
         font-size: 11px;
         color: #18181b;
         font-family: monospace;
-        min-height: 28px;
+        min-height: 26px;
     }
     .registro-texto {
         overflow-x: auto;
@@ -96,17 +96,18 @@ st.markdown("""
         padding: 0px !important;
     }
 
+    /* BOTONES NUMÉRICOS PEQUEÑOS Y DISCRETOS A LA IZQUIERDA */
     div.stButton > button {
-        width: 100% !important;
-        height: 38px !important;
+        width: 60px !important;
+        height: 28px !important;
         padding: 0px !important;
-        font-size: 14px !important;
+        font-size: 12px !important;
         font-weight: 600 !important;
         background-color: #ffffff !important;
         color: #333333 !important;
         border: 1px solid #dcdcdc !important;
-        border-radius: 5px !important;
-        margin-bottom: 4px !important;
+        border-radius: 4px !important;
+        margin-bottom: 2px !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -241,12 +242,12 @@ with col_del_v:
         borrar_ultimo()
         st.rerun()
 
-# 8. TECLADO EN UNA ÚNICA COLUMNA VERTICAL (1 AL 36 + 0)
-if st.button("0", key="btn_0", use_container_width=True):
+# 8. BOTONES SECUENCIALES PEQUEÑOS Y ALINEADOS A LA IZQUIERDA
+if st.button("0", key="btn_0"):
     procesar_numero(0)
     st.rerun()
 
 for i in range(1, 37):
-    if st.button(str(i), key=f"btn_{i}", use_container_width=True):
+    if st.button(str(i), key=f"btn_{i}"):
         procesar_numero(i)
         st.rerun()
