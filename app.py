@@ -3,7 +3,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Agente", layout="centered")
 
-# Estilo para filas fluidas, tonos tenues y cero desbordamiento en iPhone 12
+# Estilo para filas fluidas, colores tenues y cero scroll lateral
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -78,8 +78,8 @@ st.markdown("""
         margin-right: 6px;
     }
 
-    /* Disposición por FILAS fluidas que encajan perfectamente en el iPhone */
-    .teclado-filas {
+    /* Teclado en FILAS adaptables */
+    .teclado-container {
         display: flex;
         flex-wrap: wrap;
         gap: 4px;
@@ -87,7 +87,7 @@ st.markdown("""
         width: 100%;
         margin-top: 4px;
     }
-    .btn-num-fila {
+    .btn-num-item {
         flex: 1 0 18%;
         max-width: 23%;
         height: 32px;
@@ -97,14 +97,9 @@ st.markdown("""
         color: #333333;
         font-weight: 600;
         font-size: 13px;
-        text-align: center;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
         box-sizing: border-box;
     }
-    .btn-zero-fila {
+    .btn-zero-item {
         flex: 1 0 100%;
         max-width: 100%;
         height: 32px;
@@ -114,16 +109,11 @@ st.markdown("""
         color: #18181b;
         font-weight: 700;
         font-size: 14px;
-        text-align: center;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
         margin-bottom: 2px;
         box-sizing: border-box;
     }
 
-    /* Clases para colores discretos de calientes y fríos */
+    /* Colores tenues */
     .btn-caliente {
         background-color: #fff3e0 !important;
         border: 1px solid #ffe0b2 !important;
@@ -148,19 +138,18 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Memoria persistente del historial
+# Estado persistente en memoria (Historial acumulativo continuo)
 if "historial" not in st.session_state:
     st.session_state.historial = []
 
-# Procesamiento de botones HTML mediante query_params sin perder el session_state
-query_params = st.query_params
-
-if "num" in query_params:
-    st.session_state.historial.append(int(query_params["num"]))
+# Procesar número pulsado o borrado desde formulario invisible POST
+if st.query_params.get("action") == "add":
+    num_val = int(st.query_params.get("value"))
+    st.session_state.historial.append(num_val)
     st.query_params.clear()
     st.rerun()
 
-if "del" in query_params:
+if st.query_params.get("action") == "del":
     if len(st.session_state.historial) > 0:
         st.session_state.historial.pop()
     st.query_params.clear()
@@ -201,15 +190,16 @@ with col_b:
         </div>
     """, unsafe_allow_html=True)
 
-# 3. Visor de registro acumulativo continuo
+# 3. Visor de registro acumulativo con botón ⌫ Borrar
 if st.session_state.historial:
     texto_registro = " - ".join(map(str, st.session_state.historial))
     st.markdown(f"""
         <div class="registro-container">
             <div class="registro-texto"><b>Reg ({len(st.session_state.historial)}):</b> {texto_registro}</div>
-            <a href="?del=1" target="_self" style="text-decoration:none;">
-                <button class="btn-del-style">⌫ Borrar</button>
-            </a>
+            <form method="get" style="margin:0;">
+                <input type="hidden" name="action" value="del" />
+                <button type="submit" class="btn-del-style">⌫ Borrar</button>
+            </form>
         </div>
     """, unsafe_allow_html=True)
 else:
@@ -219,27 +209,39 @@ else:
         </div>
     """, unsafe_allow_html=True)
 
-# 4. Teclado en FILAS adaptable con sombreado dinámico
-html_teclado = '<div class="teclado-filas">'
+# 4. Teclado en FILAS mediante botones de formulario (Garantiza persistencia)
+html_teclado = '<div class="teclado-container">'
 
 # Botón 0
-clase_zero = "btn-zero-fila"
+clase_zero = "btn-zero-item"
 if 0 in set_calientes:
     clase_zero += " btn-caliente"
 elif 0 in set_frios:
     clase_zero += " btn-frio"
 
-html_teclado += f'<a href="?num=0" target="_self" class="{clase_zero}">0</a>'
+html_teclado += f'''
+    <form method="get" style="margin:0; width:100%;">
+        <input type="hidden" name="action" value="add" />
+        <input type="hidden" name="value" value="0" />
+        <button type="submit" class="{clase_zero}">0</button>
+    </form>
+'''
 
 # Botones 1 al 36
 for n in range(1, 37):
-    clase_btn = "btn-num-fila"
+    clase_btn = "btn-num-item"
     if n in set_calientes:
         clase_btn += " btn-caliente"
     elif n in set_frios:
         clase_btn += " btn-frio"
     
-    html_teclado += f'<a href="?num={n}" target="_self" class="{clase_btn}">{n}</a>'
+    html_teclado += f'''
+        <form method="get" style="margin:0; flex: 1 0 18%; max-width: 23%;">
+            <input type="hidden" name="action" value="add" />
+            <input type="hidden" name="value" value="{n}" />
+            <button type="submit" class="{clase_btn}">{n}</button>
+        </form>
+    '''
 
 html_teclado += '</div>'
 
