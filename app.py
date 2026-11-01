@@ -2,7 +2,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Agente Ruleta Express", layout="centered")
 
-# Estilos CSS estables e idénticos para mantener la proporción
+# Estilos CSS optimizados y estables para iPhone 12
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -95,7 +95,6 @@ st.markdown("""
         padding: 0px !important;
     }
 
-    /* Botones de tamaño equilibrado que respetan estrictamente los márgenes */
     div.stButton > button {
         width: 100% !important;
         height: 28px !important;
@@ -145,7 +144,7 @@ def borrar_ultimo():
     elif st.session_state.foco == "reg" and st.session_state.historial:
         st.session_state.historial.pop(0)
 
-# 3. LÓGICA DEL AGENTE
+# 3. NUEVO CEREBRO DEL AGENTE (ADAPTATIVO, CON DETECCIÓN DE ECOS Y BLOQUES CONTINUOS)
 def obtener_vecinos(num, radio=2):
     idx = RUEDA_OFICIAL.index(num)
     return [RUEDA_OFICIAL[(idx + i) % len(RUEDA_OFICIAL)] for i in range(-radio, radio + 1)]
@@ -154,31 +153,60 @@ def calcular_agente(historial, calientes_panel, frios_panel):
     if len(historial) < 2 and not calientes_panel:
         return None, None
 
+    # Ventana de análisis reciente (hasta 30 giros)
     ventana = historial[:30] if historial else []
     conteo_sesion = {n: ventana.count(n) for n in range(37)}
     
+    # Detección de Ecos / Repeticiones (números repetidos en la ventana corta)
+    ecos_detectados = [n for n, count in conteo_sesion.items() if count >= 2]
+
     puntuaciones = {}
     for num in RUEDA_OFICIAL:
         vecinos_cercanos = obtener_vecinos(num, radio=1)
+        
+        # Base de frecuencia en sesión
         score = sum(conteo_sesion[v] * 2 for v in vecinos_cercanos)
+        
+        # Impulso por números calientes del usuario
         score += sum(3 for v in vecinos_cercanos if v in calientes_panel)
-        score -= sum(4 for v in vecinos_cercanos if v in frios_panel)
+        
+        # ALERTA DE ECO: Si la zona contiene un número repetido recientemente, se premia con fuerza
+        if any(v in ecos_detectados for v in vecinos_cercanos):
+            score += 5
+
+        # ADAPTABILIDAD DINÁMICA DE FRÍOS: Si un "frío" empieza a salir en la ventana, 
+        # el agente reduce automáticamente su penalización para no bloquearse ante el cambio de ciclo.
+        for v in vecinos_cercanos:
+            if v in frios_panel:
+                # Si el frío tiene frecuencia reciente, la penalización se anula (flexibilidad de ciclo)
+                if conteo_sesion[v] > 0:
+                    score -= 1  # Penalización suave de adaptación
+                else:
+                    score -= 4  # Penalización normal si sigue inactivo
+
         puntuaciones[num] = score
 
+    # Ordenar candidatos para Grupo A (Ataque principal)
     ordenados = sorted(puntuaciones, key=puntuaciones.get, reverse=True)
     max_score = puntuaciones[ordenados[0]]
     
     apuesta_fuerte = []
     for n in ordenados:
-        if n in frios_panel:
+        # Permitir flexibilidad si el frío está empujando con eco
+        if n in frios_panel and conteo_sesion[n] == 0:
             continue
-        if len(apuesta_fuerte) < 3 or (len(apuesta_fuerte) < 6 and puntuaciones[n] >= max_score * 0.7):
+        if len(apuesta_fuerte) < 4 or (len(apuesta_fuerte) < 7 and puntuaciones[n] >= max_score * 0.65):
             apuesta_fuerte.append(n)
 
-    ultimo_num = historial[0] if historial else (calientes_panel[0] if calientes_panel else 0)
-    cobertura_inercia = [n for n in obtener_vecinos(ultimo_num, radio=2) if n not in apuesta_fuerte and n not in frios_panel]
+    # SELLADO DE HUECOS: Ordenar los números del Grupo A según su posición física en la rueda 
+    # para unificar el sector en un bloque continuo (cero espacios vacíos)
+    apuesta_fuerte_ordenada_rueda = [n for n in RUEDA_OFICIAL if n in apuesta_fuerte]
 
-    return sorted(apuesta_fuerte), sorted(cobertura_inercia)
+    # Generación de Grupo B adaptativo (Cobertura e inercia de rebote sin dejar huecos)
+    ultimo_num = historial[0] if historial else (calientes_panel[0] if calientes_panel else 0)
+    cobertura_inercia = [n for n in obtener_vecinos(ultimo_num, radio=2) if n not in apuesta_fuerte]
+
+    return apuesta_fuerte_ordenada_rueda, sorted(cobertura_inercia)
 
 # --- FLUJO VERTICAL: CALIENTES -> FRÍOS -> REGISTRO ---
 
@@ -225,8 +253,8 @@ fuerte, cobertura = calcular_agente(st.session_state.historial, st.session_state
 txt_a = ", ".join(map(str, fuerte)) if fuerte else "—"
 txt_b = ", ".join(map(str, cobertura)) if cobertura else "—"
 
-st.markdown(f'<div class="card-discreta"><div class="card-titulo">Grupo A (Ataque 70%)</div><div class="card-valores-fuerte">{txt_a}</div></div>', unsafe_allow_html=True)
-st.markdown(f'<div class="card-discreta"><div class="card-titulo">Grupo B (Cobertura 30%)</div><div class="card-valores-suave">{txt_b}</div></div>', unsafe_allow_html=True)
+st.markdown(f'<div class="card-discreta"><div class="card-titulo">Grupo A (Ataque Continuo)</div><div class="card-valores-fuerte">{txt_a}</div></div>', unsafe_allow_html=True)
+st.markdown(f'<div class="card-discreta"><div class="card-titulo">Grupo B (Cobertura de Rebote)</div><div class="card-valores-suave">{txt_b}</div></div>', unsafe_allow_html=True)
 
 # --- TECLADO EN 2 COLUMNAS (0 AL 36) ---
 if st.button("0", key="btn_0", use_container_width=True):
