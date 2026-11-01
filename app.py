@@ -2,7 +2,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Agente", layout="centered")
 
-# Estilo ultra compacto para evitar scroll en iPhone 12
+# Estilo ultra compacto para evitar scroll
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -42,7 +42,7 @@ st.markdown("""
         color: #555555;
     }
     
-    /* Contenedor flexible para el visor y el botón de borrado */
+    /* Visor de registro con boton de borrado integrado */
     .registro-container {
         display: flex;
         justify-content: space-between;
@@ -141,7 +141,7 @@ with col_b:
         </div>
     """, unsafe_allow_html=True)
 
-# Visor de registro con botón discreto de borrado (⌫)
+# Visor de registro con botón de borrado (⌫ Borrar)
 if st.session_state.historial:
     ultimos = st.session_state.historial[-20:]
     texto_registro = " - ".join(map(str, ultimos))
